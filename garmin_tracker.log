@@ -1,0 +1,60 @@
+2024-12-15 11:05:52,862 - INFO - Connexion réussie à Garmin Connect.
+2024-12-15 11:06:14,232 - INFO - Données sauvegardées dans garmin_data\Greg_activities.json.
+2024-12-15 11:06:52,632 - INFO - Connexion réussie à Garmin Connect.
+2024-12-15 11:07:13,146 - INFO - Connexion réussie à Garmin Connect.
+2024-12-15 11:07:13,182 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.46:5000
+2024-12-15 11:07:13,183 - INFO - [33mPress CTRL+C to quit[0m
+2024-12-15 11:07:24,144 - INFO - 127.0.0.1 - - [15/Dec/2024 11:07:24] "GET / HTTP/1.1" 200 -
+2024-12-15 11:07:24,773 - INFO - 127.0.0.1 - - [15/Dec/2024 11:07:24] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2024-12-15 11:07:28,070 - ERROR - Exception on /activity [GET]
+Traceback (most recent call last):
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\duwat\OneDrive\Documents\GitHub\Garmin_tracker\main.py", line 30, in activity
+    return render_template("activity.html")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\jinja2\environment.py", line 1084, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\jinja2\environment.py", line 1013, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\jinja2\environment.py", line 972, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\duwat\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: activity.html
+2024-12-15 11:07:28,090 - INFO - 127.0.0.1 - - [15/Dec/2024 11:07:28] "[35m[1mGET /activity HTTP/1.1[0m" 500 -
+2024-12-15 11:09:36,091 - INFO - Connexion réussie à Garmin Connect.
+2024-12-15 11:09:36,115 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.46:5000
+2024-12-15 11:09:36,116 - INFO - [33mPress CTRL+C to quit[0m
+2024-12-15 11:09:40,975 - INFO - 127.0.0.1 - - [15/Dec/2024 11:09:40] "GET /health HTTP/1.1" 200 -
+2024-12-15 11:09:41,229 - INFO - 127.0.0.1 - - [15/Dec/2024 11:09:41] "GET /api/health HTTP/1.1" 200 -
+2024-12-15 11:10:00,837 - INFO - 127.0.0.1 - - [15/Dec/2024 11:10:00] "GET /activity HTTP/1.1" 200 -
+2024-12-15 11:10:00,981 - INFO - 127.0.0.1 - - [15/Dec/2024 11:10:00] "GET /api/activity HTTP/1.1" 200 -

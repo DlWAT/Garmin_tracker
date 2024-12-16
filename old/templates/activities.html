@@ -1,0 +1,71 @@
+<!-- activities.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Données des Activités</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+        }
+        .left-panel {
+            flex: 1;
+        }
+        .right-panel {
+            flex: 2;
+        }
+        .activities-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .activities-list li {
+            background: #f0f0f0;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Données des Activités</h1>
+    
+    <div class="container">
+        <div class="left-panel">
+            <div class="activities-list">
+                <h2>Liste des Activités</h2>
+                <ul>
+                    {% for activity in activities_data %}
+                        <li>{{ activity.startTimeLocal }} - {{ activity.activityType }} - {{ activity.distance | default(0) / 1000 | round(2) }} km - {{ activity.duration | default(0) / 3600 | round(2) }} heures - {{ activity.calories | default(0) }} kcal</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="graphs">
+                <h2>Graphiques</h2>
+                <div>
+                    <img src="{{ url_for('static', filename='graphs/distance_activities_graph.png') }}" alt="Graphique des distances">
+                    <img src="{{ url_for('static', filename='graphs/elevationGain_activities_graph.png') }}" alt="Graphique des dénivelés">
+                    <img src="{{ url_for('static', filename='graphs/averageSpeed_activities_graph.png') }}" alt="Graphique des vitesses">
+                    <img src="{{ url_for('static', filename='graphs/averagePace_activities_graph.png') }}" alt="Graphique des allures">
+                    <img src="{{ url_for('static', filename='graphs/calories_activities_graph.png') }}" alt="Graphique des calories">
+                    <img src="{{ url_for('static', filename='graphs/duration_activities_graph.png') }}" alt="Graphique des durées">
+                    {% if stats.training_effect_exists %}
+                        <img src="{{ url_for('static', filename='graphs/trainingEffect_activities_graph.png') }}" alt="Graphique des Training Effects">
+                    {% endif %}
+                    {% if stats.average_power_exists %}
+                        <img src="{{ url_for('static', filename='graphs/averagePower_activities_graph.png') }}" alt="Graphique des puissances">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <a href="/">Retour à l'accueil</a>
+</body>
+</html>

@@ -1,0 +1,143 @@
+{
+    "id": 107255629,
+    "userData": {
+        "gender": "MALE",
+        "weight": 52100.0,
+        "height": 183.0,
+        "timeFormat": "time_twelve_hr",
+        "birthDate": "1998-05-01",
+        "measurementSystem": "metric",
+        "activityLevel": null,
+        "handedness": "RIGHT",
+        "powerFormat": {
+            "formatId": 30,
+            "formatKey": "watt",
+            "minFraction": 0,
+            "maxFraction": 0,
+            "groupingUsed": true,
+            "displayFormat": null
+        },
+        "heartRateFormat": {
+            "formatId": 21,
+            "formatKey": "bpm",
+            "minFraction": 0,
+            "maxFraction": 0,
+            "groupingUsed": false,
+            "displayFormat": null
+        },
+        "firstDayOfWeek": {
+            "dayId": 3,
+            "dayName": "monday",
+            "sortOrder": 3,
+            "isPossibleFirstDay": true
+        },
+        "vo2MaxRunning": 54.0,
+        "vo2MaxCycling": null,
+        "lactateThresholdSpeed": 0.36666564,
+        "lactateThresholdHeartRate": 193,
+        "diveNumber": null,
+        "intensityMinutesCalcMethod": "AUTO",
+        "moderateIntensityMinutesHrZone": 3,
+        "vigorousIntensityMinutesHrZone": 4,
+        "hydrationMeasurementUnit": "milliliter",
+        "hydrationContainers": [
+            {
+                "name": null,
+                "volume": 1,
+                "unit": "cup"
+            },
+            {
+                "name": null,
+                "volume": 2,
+                "unit": "cup"
+            },
+            {
+                "name": null,
+                "volume": 3,
+                "unit": "cup"
+            }
+        ],
+        "hydrationAutoGoalEnabled": true,
+        "firstbeatMaxStressScore": null,
+        "firstbeatCyclingLtTimestamp": null,
+        "firstbeatRunningLtTimestamp": 1102449722,
+        "thresholdHeartRateAutoDetected": true,
+        "ftpAutoDetected": true,
+        "trainingStatusPausedDate": null,
+        "weatherLocation": {
+            "useFixedLocation": null,
+            "latitude": null,
+            "longitude": null,
+            "locationName": null,
+            "isoCountryCode": null,
+            "postalCode": null
+        },
+        "golfDistanceUnit": "statute_us",
+        "golfElevationUnit": null,
+        "golfSpeedUnit": null,
+        "externalBottomTime": null,
+        "availableTrainingDays": [
+            "WEDNESDAY",
+            "THURSDAY",
+            "SUNDAY",
+            "FRIDAY",
+            "SATURDAY",
+            "MONDAY",
+            "TUESDAY"
+        ],
+        "preferredLongTrainingDays": [
+            "SUNDAY",
+            "SATURDAY"
+        ]
+    },
+    "userSleep": {
+        "sleepTime": 3600,
+        "defaultSleepTime": false,
+        "wakeTime": 25200,
+        "defaultWakeTime": false
+    },
+    "connectDate": null,
+    "sourceType": null,
+    "userSleepWindows": [
+        {
+            "sleepWindowFrequency": "SUNDAY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        },
+        {
+            "sleepWindowFrequency": "MONDAY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        },
+        {
+            "sleepWindowFrequency": "TUESDAY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        },
+        {
+            "sleepWindowFrequency": "WEDNESDAY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        },
+        {
+            "sleepWindowFrequency": "THURSDAY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        },
+        {
+            "sleepWindowFrequency": "FRIDAY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        },
+        {
+            "sleepWindowFrequency": "SATURDAY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        },
+        {
+            "sleepWindowFrequency": "DAILY",
+            "startSleepTimeSecondsFromMidnight": 3600,
+            "endSleepTimeSecondsFromMidnight": 25200
+        }
+    ]
+}

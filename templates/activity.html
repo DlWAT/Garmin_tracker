@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse des Activités</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='activity.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Analyse des Activités</h1>
+        <nav>
+            <a href="/">Accueil</a>
+            <a href="/activity" class="active">Activités</a>
+            <a href="/health">Santé</a>
+            <a href="/training">Entraînement</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <button onclick="window.location.href='/update_activity'">Mettre à jour les données</button>
+
+        <div class="graph-container">
+            <iframe src="{{ url_for('static', filename='activity/distance.html') }}" width="750" height="500"></iframe>
+            <iframe src="{{ url_for('static', filename='activity/duration.html') }}" width="750" height="500"></iframe>
+        </div>
+        <div class="graph-container">
+            <iframe src="{{ url_for('static', filename='activity/pace.html') }}" width="750" height="500"></iframe>
+            <iframe src="{{ url_for('static', filename='activity/average_hr.html') }}" width="750" height="500"></iframe>
+        </div>
+    </main>
+</body>
+</html>

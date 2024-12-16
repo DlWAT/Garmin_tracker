@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Health</h1>
+<button onclick="window.location.href='/update_health';">Update Health Data</button>
+<div class="graph-container">
+    {% for graph in health_graphs %}
+    <div class="graph">
+        <img src="{{ graph }}" alt="Health Graph">
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
