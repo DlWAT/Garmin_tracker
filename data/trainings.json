@@ -1,0 +1,13 @@
+[
+    {
+        "name": "EF du lundi",
+        "date": "2024-12-16",
+        "distance" : "15"
+    },
+    {
+        "name": "piste",
+        "date": "2024-12-17",
+        "distance" : "15",
+        "description" : "4x1000 à 4'00''/km"
+    }
+]

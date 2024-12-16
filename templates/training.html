@@ -3,73 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entraînement</title>
-    <!-- FullCalendar CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-    <!-- Training-specific CSS -->
+    <title>Calendrier interactif</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            let trainings = {{ trainings|tojson }};
+            let competitions = {{ competitions|tojson }};
+            const calendarBody = document.getElementById("calendar-body");
+            const monthYearDisplay = document.getElementById("month-year");
+            const tooltip = document.getElementById("tooltip");
+
+            let currentDate = new Date();
+
+            const renderCalendar = () => {
+                calendarBody.innerHTML = ""; // Efface l'ancien contenu
+
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const firstDay = new Date(year, month, 1).getDay();
+                const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1; // Débute lundi
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                monthYearDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+
+                let row = document.createElement("tr");
+
+                // Ajouter des cases vides avant le 1er jour
+                for (let i = 0; i < adjustedFirstDay; i++) {
+                    const emptyCell = document.createElement("td");
+                    emptyCell.className = "empty-cell";
+                    row.appendChild(emptyCell);
+                }
+
+                // Ajouter des cellules pour chaque jour
+                for (let day = 1; day <= daysInMonth; day++) {
+                    if (row.children.length === 7) {
+                        calendarBody.appendChild(row);
+                        row = document.createElement("tr");
+                    }
+
+                    const dayCell = document.createElement("td");
+                    dayCell.className = "day-cell";
+                    dayCell.textContent = day;
+
+                    // Ajouter les événements (entraîne ou compétition)
+                    const events = [];
+                    trainings.forEach(training => {
+                        if (training.date === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`) {
+                            events.push({ type: 'training', ...training });
+                        }
+                    });
+                    competitions.forEach(competition => {
+                        if (competition.date === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`) {
+                            events.push({ type: 'competition', ...competition });
+                        }
+                    });
+
+                    events.forEach(event => {
+                        const eventDiv = document.createElement("div");
+                        eventDiv.className = event.type === 'training' ? "training-event" : "competition-event";
+                        eventDiv.textContent = event.name;
+                        eventDiv.addEventListener("mouseenter", (e) => showTooltip(e, event));
+                        eventDiv.addEventListener("mouseleave", hideTooltip);
+                        dayCell.appendChild(eventDiv);
+                    });
+
+                    row.appendChild(dayCell);
+                }
+
+                // Ajouter la dernière ligne si elle contient des éléments
+                if (row.children.length > 0) {
+                    calendarBody.appendChild(row);
+                }
+            };
+
+            const prevMonth = () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            };
+
+            const nextMonth = () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            };
+
+            const showTooltip = (event, data) => {
+                tooltip.style.display = "block";
+                tooltip.style.top = `${event.pageY + 10}px`;
+                tooltip.style.left = `${event.pageX + 10}px`;
+                tooltip.textContent = `${data.type === 'training' ? "Entraînement" : "Compétition"}: ${data.name}
+Description: ${data.description}
+Distance: ${data.distance || 'N/A'} km`;
+            };
+
+            const hideTooltip = () => {
+                tooltip.style.display = "none";
+            };
+
+            const renderList = () => {
+                const competitionList = document.getElementById("competition-list");
+                const trainingList = document.getElementById("training-list");
+
+                competitionList.innerHTML = competitions.map(competition => `
+                    <li>
+                        <div>
+                            <strong>${competition.name}</strong>
+                            <p>Date: ${competition.date} | Distance: ${competition.distance || 'N/A'} km</p>
+                        </div>
+                        <button class="delete-button" onclick="deleteCompetition('${competition.name}', '${competition.date}')">Supprimer</button>
+                    </li>
+                `).join("");
+
+                trainingList.innerHTML = trainings.map(training => `
+                    <li>
+                        <div>
+                            <strong>${training.name}</strong>
+                            <p>Date: ${training.date} | Distance: ${training.distance || 'N/A'} km</p>
+                        </div>
+                        <button class="delete-button" onclick="deleteTraining('${training.name}', '${training.date}')">Supprimer</button>
+                    </li>
+                `).join("");
+            };
+
+            const addEvent = (type) => {
+                const name = document.getElementById(`${type}-name`).value;
+                const date = document.getElementById(`${type}-date`).value;
+                const distance = document.getElementById(`${type}-distance`).value;
+
+                if (!name || !date) {
+                    alert("Veuillez remplir tous les champs.");
+                    return;
+                }
+
+                const newEvent = { name, date, distance: parseFloat(distance) || "N/A" };
+                if (type === "training") {
+                    trainings.push(newEvent);
+                } else {
+                    competitions.push(newEvent);
+                }
+
+                renderCalendar();
+                renderList();
+                document.getElementById(`${type}-form`).reset();
+            };
+
+            const deleteCompetition = (name, date) => {
+                competitions = competitions.filter(c => c.name !== name || c.date !== date);
+                renderCalendar();
+                renderList();
+            };
+
+            const deleteTraining = (name, date) => {
+                trainings = trainings.filter(t => t.name !== name || t.date !== date);
+                renderCalendar();
+                renderList();
+            };
+
+            document.getElementById("prev-month").addEventListener("click", prevMonth);
+            document.getElementById("next-month").addEventListener("click", nextMonth);
+
+            document.getElementById("add-training").addEventListener("click", () => addEvent("training"));
+            document.getElementById("add-competition").addEventListener("click", () => addEvent("competition"));
+
+            renderCalendar();
+            renderList();
+        });
+    </script>
 </head>
 <body>
     <header>
-        <h1>Entraînement</h1>
+        <h1>Calendrier interactif</h1>
         <nav>
             <a href="/">Accueil</a>
             <a href="/activity">Activités</a>
             <a href="/health">Santé</a>
-            <a href="/training">Entraînement</a>
+            <a href="/training">Entraînements</a>
         </nav>
     </header>
-
-    <main class="training-container">
-        <!-- Section Calendrier -->
-        <div class="calendar-container">
-            <h2>Calendrier</h2>
-            <div id="calendar"></div>
-        </div>
-
-        <!-- Section Compétitions -->
-        <div class="competition-list">
-            <h2>Compétitions à venir</h2>
-            <ul>
-                {% for competition in competitions %}
-                <li>
-                    <strong>{{ competition.title }}</strong><br>
-                    Date : {{ competition.start }}<br>
-                    Description : {{ competition.description }}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
+    <main class="container">
+        <section class="calendar-container">
+            <div class="calendar-navigation">
+                <button id="prev-month">◀</button>
+                <span id="month-year"></span>
+                <button id="next-month">▶</button>
+            </div>
+            <table class="calendar-table">
+                <thead>
+                    <tr>
+                        <th>Lun</th>
+                        <th>Mar</th>
+                        <th>Mer</th>
+                        <th>Jeu</th>
+                        <th>Ven</th>
+                        <th>Sam</th>
+                        <th>Dim</th>
+                    </tr>
+                </thead>
+                <tbody id="calendar-body"></tbody>
+            </table>
+        </section>
+        <section class="list-container">
+            <div class="list">
+                <h2>Ajouter une compétition</h2>
+                <form id="competition-form">
+                    <input type="text" id="competition-name" placeholder="Nom de la compétition" required>
+                    <input type="date" id="competition-date" required>
+                    <input type="number" id="competition-distance" placeholder="Distance (km)" step="0.1">
+                    <button type="button" id="add-competition">Ajouter</button>
+                </form>
+                <ul id="competition-list"></ul>
+            </div>
+            <div class="list">
+                <h2>Ajouter un entraînement</h2>
+                <form id="training-form">
+                    <input type="text" id="training-name" placeholder="Nom de l'entraînement" required>
+                    <input type="date" id="training-date" required>
+                    <input type="number" id="training-distance" placeholder="Distance (km)" step="0.1">
+                    <button type="button" id="add-training">Ajouter</button>
+                </form>
+                <ul id="training-list"></ul>
+            </div>
+        </section>
+        <div id="tooltip" class="tooltip"></div>
     </main>
-
-    <!-- FullCalendar JS -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var calendarEl = document.getElementById('calendar');
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth', // Vue par défaut
-                locale: 'fr',               // Langue française
-                events: [
-                    {% for competition in competitions %}
-                    {
-                        title: "{{ competition.title }}",
-                        start: "{{ competition.start }}",
-                        description: "{{ competition.description }}"
-                    },
-                    {% endfor %}
-                ],
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                },
-                eventClick: function (info) {
-                    alert(info.event.title + '\n' + info.event.start.toLocaleDateString() + '\n' + info.event.extendedProps.description);
-                }
-            });
-            calendar.render();
-        });
-    </script>
 </body>
 </html>

@@ -1,17 +1,12 @@
 [
     {
-        "name": "Marathon de Paris",
-        "date": "2024-04-14",
-        "location": "Paris, France"
+        "name": "10 km de Lille",
+        "date": "2025-03-16",
+        "location": "Lille"
     },
     {
-        "name": "Trail des Monts",
-        "date": "2024-05-01",
-        "location": "Annecy, France"
-    },
-    {
-        "name": "Semi-Marathon de Lyon",
-        "date": "2024-06-20",
-        "location": "Lyon, France"
+        "name": "Les foul\u00e9es valenciennoises",
+        "date": "2025-03-30",
+        "location": "Valenciennes"
     }
 ]
