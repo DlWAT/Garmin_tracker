@@ -1,19 +1,242 @@
-.graph-container {
+/* Général */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #1E1E2F;
+    color: #FFF;
+}
+
+header {
+    text-align: center;
+    padding: 20px;
+    background-color: #282C34;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+header nav a {
+    color: #61DAFB;
+    margin: 0 15px;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+/* Conteneurs */
+.container {
     display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
     gap: 20px;
-    margin: 20px auto;
-    max-width: 1700px;
+    padding: 20px;
 }
 
-.graph-container iframe {
+.calendar-container {
+    flex: 2;
+    background-color: #2C313C;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.list-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Navigation calendrier */
+.calendar-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+    color: #61DAFB;
+}
+
+.calendar-navigation button {
+    background-color: #61DAFB;
+    color: #1E1E2F;
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.7);
-    transition: transform 0.3s ease;
+    padding: 5px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
 }
 
-.graph-container iframe:hover {
-    transform: scale(1.03);
+.calendar-navigation button:hover {
+    background-color: #529EC4;
+}
+
+/* Calendrier */
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.calendar-table th, .calendar-table td {
+    width: 14.28%;
+    height: 100px;
+    text-align: center;
+    vertical-align: top;
+    border: 1px solid #3A3F47;
+    padding: 5px;
+}
+
+.calendar-table th {
+    background-color: #40444B;
+    color: #FFF;
+    font-weight: bold;
+}
+
+.day-cell {
+    position: relative;
+    background-color: #3A3F47;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.day-cell:hover {
+    background-color: #505763;
+    cursor: pointer;
+}
+
+/* Événements */
+.activity-event {
+    background-color: #FF9800;
+    color: white;
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.training-event {
+    background-color: #4CAF50;
+    color: #FFF;
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.competition-event {
+    background-color: #F44336;
+    color: #FFF;
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Info-bulle */
+.tooltip {
+    position: absolute;
+    background-color: #40444B;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    white-space: pre-line;
+}
+
+/* Formulaires */
+form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Permet un retour à la ligne si l'espace est trop limité */
+}
+
+form input, form button {
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1px solid #61DAFB;
+    flex: 1;
+    max-width: calc(33% - 10px);
+    min-width: 100px;
+}
+
+form input[type="text"], form input[type="date"], form input[type="number"] {
+    background-color: #FFF;
+    color: #000;
+}
+
+form button {
+    background-color: #61DAFB;
+    color: #1E1E2F;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    max-width: 100px;
+}
+
+form button:hover {
+    background-color: #529EC4;
+}
+
+/* Listes */
+.list h2 {
+    margin-bottom: 15px;
+    color: #61DAFB;
+    font-size: 1.2rem;
+    border-bottom: 2px solid #61DAFB;
+    padding-bottom: 5px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+ul li {
+    background-color: #3A3F47;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+ul li div {
+    flex: 1;
+}
+
+ul li strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 5px;
+    color: #FFF;
+}
+
+ul li p {
+    font-size: 0.9rem;
+    color: #BBB;
+}
+
+ul li button {
+    background-color: #F44336;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+ul li button:hover {
+    background-color: #E53935;
 }

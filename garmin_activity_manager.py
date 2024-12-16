@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import re
+import time
 
 class GarminActivityManager:
     def __init__(self, user_id):
@@ -153,3 +154,71 @@ class GarminActivityManager:
 
             # Sauvegarde du graphique
             fig.write_html(os.path.join(output_dir, output_file))
+
+    def update_data(self):
+        """Récupère les résumés d'activités depuis l'API Garmin et les sauvegarde."""
+        # Simuler la récupération des activités via l'API
+        logging.info("Récupération des résumés d'activités depuis l'API...")
+        # Remplir cette section avec les appels à l'API Garmin
+        pass
+
+    def update_activity_details(self):
+        """Récupère les détails des activités depuis l'API Garmin et les sauvegarde."""
+        if not self.activities:
+            logging.warning("Aucune activité disponible. Veuillez d'abord récupérer les résumés.")
+            return
+
+        for activity in self.activities:
+            activity_id = activity.get("activityId")
+            if not activity_id:
+                logging.warning(f"Aucune ID trouvée pour l'activité : {activity}")
+                continue
+
+            details_file = os.path.join("data", f"activity_{activity_id}_details.json")
+            if os.path.exists(details_file):
+                logging.info(f"Détails déjà récupérés pour l'activité ID {activity_id}.")
+                continue
+
+            logging.info(f"Récupération des détails pour l'activité ID {activity_id}...")
+            try:
+                # Simuler l'appel API (remplacer par un vrai appel API)
+                details = self._fetch_activity_details(activity_id)
+                with open(details_file, "w") as f:
+                    json.dump(details, f, indent=4)
+                logging.info(f"Détails enregistrés pour l'activité ID {activity_id}.")
+            except Exception as e:
+                logging.error(f"Erreur lors de la récupération des détails pour l'activité ID {activity_id} : {e}")
+
+            # Pause pour éviter de surcharger l'API
+            time.sleep(5)
+
+    def _fetch_activity_details(self, activity_id):
+        """Simule la récupération des détails d'une activité via l'API Garmin."""
+        # Remplacer cette simulation par un vrai appel API
+        return {
+            "activityId": activity_id,
+            "path": [{"lat": 48.8566, "lon": 2.3522}, {"lat": 48.8570, "lon": 2.3530}],
+            "heartRate": [120, 125, 130, 135],
+            "pace": [5.2, 5.1, 5.0, 4.9],
+        }
+    
+    def convert_activities_to_trainings(self):
+        """Convertit les activités existantes au format trainings.json."""
+        activities = self._load_data()  # Charge les activités
+        trainings = []
+        for activity in activities:
+            training = {
+                "name": activity.get("activityName", "Activité non nommée"),
+                "date": activity.get("startTimeLocal", "Date inconnue").split(" ")[0],
+                "distance": round(activity.get("distance", 0) / 1000, 2),
+                "description": activity.get("description", "Aucune description")
+            }
+            trainings.append(training)
+        return trainings
+    
+    def save_to_trainings_file(self, trainings):
+        """Sauvegarde les données transformées dans trainings.json."""
+        file_path = os.path.join("data", "trainings.json")
+        with open(file_path, "w") as f:
+            json.dump(trainings, f, indent=4)
+        logging.info(f"Trainings sauvegardés dans {file_path}.")

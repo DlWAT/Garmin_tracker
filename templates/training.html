@@ -9,6 +9,7 @@
         document.addEventListener("DOMContentLoaded", () => {
             let trainings = {{ trainings|tojson }};
             let competitions = {{ competitions|tojson }};
+            let activities = {{ activities|tojson }};
             const calendarBody = document.getElementById("calendar-body");
             const monthYearDisplay = document.getElementById("month-year");
             const tooltip = document.getElementById("tooltip");
@@ -16,7 +17,7 @@
             let currentDate = new Date();
 
             const renderCalendar = () => {
-                calendarBody.innerHTML = ""; // Efface l'ancien contenu
+                calendarBody.innerHTML = ""; // Réinitialise le contenu du calendrier
 
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
@@ -28,14 +29,14 @@
 
                 let row = document.createElement("tr");
 
-                // Ajouter des cases vides avant le 1er jour
+                // Ajouter des cases vides avant le premier jour
                 for (let i = 0; i < adjustedFirstDay; i++) {
                     const emptyCell = document.createElement("td");
                     emptyCell.className = "empty-cell";
                     row.appendChild(emptyCell);
                 }
 
-                // Ajouter des cellules pour chaque jour
+                // Ajouter les cellules pour chaque jour
                 for (let day = 1; day <= daysInMonth; day++) {
                     if (row.children.length === 7) {
                         calendarBody.appendChild(row);
@@ -46,8 +47,13 @@
                     dayCell.className = "day-cell";
                     dayCell.textContent = day;
 
-                    // Ajouter les événements (entraîne ou compétition)
+                    // Ajouter les événements pour la date actuelle
                     const events = [];
+                    activities.forEach(activity => {
+                        if (activity.date === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`) {
+                            events.push({ type: 'activity', ...activity });
+                        }
+                    });
                     trainings.forEach(training => {
                         if (training.date === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`) {
                             events.push({ type: 'training', ...training });
@@ -59,9 +65,15 @@
                         }
                     });
 
+                    // Afficher les événements dans les cellules
                     events.forEach(event => {
                         const eventDiv = document.createElement("div");
-                        eventDiv.className = event.type === 'training' ? "training-event" : "competition-event";
+                        eventDiv.className =
+                            event.type === 'activity'
+                                ? "activity-event"
+                                : event.type === 'training'
+                                ? "training-event"
+                                : "competition-event";
                         eventDiv.textContent = event.name;
                         eventDiv.addEventListener("mouseenter", (e) => showTooltip(e, event));
                         eventDiv.addEventListener("mouseleave", hideTooltip);
@@ -77,27 +89,41 @@
                 }
             };
 
-            const prevMonth = () => {
-                currentDate.setMonth(currentDate.getMonth() - 1);
-                renderCalendar();
-            };
-
-            const nextMonth = () => {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-                renderCalendar();
-            };
-
             const showTooltip = (event, data) => {
                 tooltip.style.display = "block";
                 tooltip.style.top = `${event.pageY + 10}px`;
                 tooltip.style.left = `${event.pageX + 10}px`;
-                tooltip.textContent = `${data.type === 'training' ? "Entraînement" : "Compétition"}: ${data.name}
-Description: ${data.description}
-Distance: ${data.distance || 'N/A'} km`;
+                tooltip.textContent = `${data.type === 'activity' ? "Activité" : data.type === 'training' ? "Entraînement" : "Compétition"}: ${data.name}
+Date: ${data.date}
+Distance: ${(data.distance / 1000).toFixed(2)} km
+Lieu: ${data.locationName || 'Lieu inconnu'}
+Description: ${data.description || 'Aucune description'}`;
             };
 
             const hideTooltip = () => {
                 tooltip.style.display = "none";
+            };
+
+            const addEvent = (type) => {
+                const name = document.getElementById(`${type}-name`).value;
+                const date = document.getElementById(`${type}-date`).value;
+                const distance = document.getElementById(`${type}-distance`).value;
+
+                if (!name || !date) {
+                    alert("Veuillez remplir tous les champs.");
+                    return;
+                }
+
+                const newEvent = { name, date, distance: parseFloat(distance) || "N/A" };
+                if (type === "training") {
+                    trainings.push(newEvent);
+                } else {
+                    competitions.push(newEvent);
+                }
+
+                renderCalendar();
+                renderList();
+                document.getElementById(`${type}-form`).reset();
             };
 
             const renderList = () => {
@@ -125,45 +151,15 @@ Distance: ${data.distance || 'N/A'} km`;
                 `).join("");
             };
 
-            const addEvent = (type) => {
-                const name = document.getElementById(`${type}-name`).value;
-                const date = document.getElementById(`${type}-date`).value;
-                const distance = document.getElementById(`${type}-distance`).value;
-
-                if (!name || !date) {
-                    alert("Veuillez remplir tous les champs.");
-                    return;
-                }
-
-                const newEvent = { name, date, distance: parseFloat(distance) || "N/A" };
-                if (type === "training") {
-                    trainings.push(newEvent);
-                } else {
-                    competitions.push(newEvent);
-                }
-
+            document.getElementById("prev-month").addEventListener("click", () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
                 renderCalendar();
-                renderList();
-                document.getElementById(`${type}-form`).reset();
-            };
+            });
 
-            const deleteCompetition = (name, date) => {
-                competitions = competitions.filter(c => c.name !== name || c.date !== date);
+            document.getElementById("next-month").addEventListener("click", () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
                 renderCalendar();
-                renderList();
-            };
-
-            const deleteTraining = (name, date) => {
-                trainings = trainings.filter(t => t.name !== name || t.date !== date);
-                renderCalendar();
-                renderList();
-            };
-
-            document.getElementById("prev-month").addEventListener("click", prevMonth);
-            document.getElementById("next-month").addEventListener("click", nextMonth);
-
-            document.getElementById("add-training").addEventListener("click", () => addEvent("training"));
-            document.getElementById("add-competition").addEventListener("click", () => addEvent("competition"));
+            });
 
             renderCalendar();
             renderList();
@@ -177,7 +173,7 @@ Distance: ${data.distance || 'N/A'} km`;
             <a href="/">Accueil</a>
             <a href="/activity">Activités</a>
             <a href="/health">Santé</a>
-            <a href="/training">Entraînements</a>
+            <a href="/training">Calendrier</a>
         </nav>
     </header>
     <main class="container">
