@@ -1,137 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analyse des Activités</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='common.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='activity.css') }}">
-    <style>
-        /* Centrage du bouton de mise à jour */
-        .update-button {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .update-button button {
-            background-color: #61DAFB;
-            color: #1E1E2F;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-size: 1rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .update-button button:hover {
-            background-color: #529EC4;
-        }
-
-        /* Organisation du contenu principal */
-        .content {
-            display: flex;
-            gap: 20px;
-        }
-
-        /* Conteneur des graphiques */
-        .graph-container {
-            flex: 3;
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* Deux colonnes */
-            gap: 10px; /* Réduction de l'espace entre les graphiques */
-        }
-
-        .graph-container iframe {
-            width: 100%;
-            height: 350px; /* Hauteur compacte pour les graphiques */
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Liste des activités */
-        .activity-list {
-            flex: 1;
-            background-color: #2C313C;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-            max-height: 800px;
-            overflow-y: auto;
-            width: 300px; /* Réduction de la largeur */
-        }
-
-        .activity-list h2 {
-            color: #61DAFB;
-            margin-bottom: 15px;
-        }
-
-        .activity-list ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .activity-list li {
-            background-color: #3A3F47;
-            padding: 8px;
-            border-radius: 5px;
-            margin-bottom: 8px;
-            font-size: 0.9rem; /* Réduction de la taille du texte */
-            display: flex;
-            justify-content: space-between; /* Alignement sur une ligne */
-            color: #BBB;
-        }
-
-        .activity-list li strong {
-            font-size: 1rem;
-            color: #FFF;
-        }
-    </style>
 </head>
 <body>
+    <!-- En-tête -->
     <header>
         <h1>Analyse des Activités</h1>
         <nav>
             <a href="/">Accueil</a>
-            <a href="/activity" class="active">Activités</a>
+            <a href="/activity">Activités</a>
             <a href="/health">Santé</a>
-            <a href="/training">Entraînement</a>
+            <a href="/training">Entraînements</a>
+            <a href="/tracking" class="active">Suivi</a>
         </nav>
     </header>
 
-    <main>
-        <!-- Bouton centré au-dessus -->
-        <section class="update-button">
-            <button onclick="window.location.href='/update_activity'">Mettre à jour les données</button>
-        </section>
+    <!-- Bouton Retour aux Activités -->
+    <section class="update-button">
+        <a href="/activity" class="button">Retour aux Activités</a>
+    </section>
 
-        <!-- Contenu principal avec flexbox -->
-        <div class="content">
-            <!-- Graphiques à gauche -->
-            <div class="graph-container">
-                <iframe src="{{ url_for('static', filename='activity/distance.html') }}"></iframe>
-                <iframe src="{{ url_for('static', filename='activity/duration.html') }}"></iframe>
-                <iframe src="{{ url_for('static', filename='activity/pace.html') }}"></iframe>
-                <iframe src="{{ url_for('static', filename='activity/average_hr.html') }}"></iframe>
-            </div>
-            
-            <!-- Liste des activités à droite -->
-            <aside class="activity-list">
-                <h2>Dernières Activités</h2>
-                <ul>
-                    {% for activity in activities %}
-                        <li>
+    <!-- Contenu principal -->
+    <main class="content">
+        <!-- Graphiques à gauche -->
+        <div class="graph-container">
+            <iframe src="{{ url_for('static', filename='activity/distance.html') }}"></iframe>
+            <iframe src="{{ url_for('static', filename='activity/duration.html') }}"></iframe>
+            <iframe src="{{ url_for('static', filename='activity/pace.html') }}"></iframe>
+            <iframe src="{{ url_for('static', filename='activity/average_hr.html') }}"></iframe>
+        </div>
+
+        <!-- Liste des activités à droite -->
+        <aside class="activity-list">
+            <h2>Dernières Activités</h2>
+            <ul>
+                {% for activity in activities %}
+                    <li>
+                        <a href="{{ url_for('activity_details', activity_id=activity.activityId) }}">
                             <strong>{{ activity.date }}</strong>
                             <span>{{ activity.distance }} km</span>
                             <span>{{ activity.duration }}</span>
                             <span>{{ activity.avg_pace }}</span>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </aside>
-        </div>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </aside>
     </main>
 </body>
 </html>

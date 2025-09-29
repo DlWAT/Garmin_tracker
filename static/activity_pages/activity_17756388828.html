@@ -1,0 +1,132 @@
+
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <title>Analyse de l'Activité 17756388828</title>
+            <style>
+                /* Styles généraux */
+                body {
+                    font-family: Arial, sans-serif;
+                    background: #1E1E2F;
+                    color: #FFF;
+                    margin: 0;
+                    line-height: 1.6;
+                }
+                h1, h2 {
+                    text-align: center;
+                    color: #61DAFB;
+                    margin-bottom: 20px;
+                }
+                /* Conteneurs principaux */
+                .container {
+                    display: flex;
+                    max-width: 1200px;
+                    margin: 20px auto;
+                    gap: 20px;
+                }
+                .map {
+                    flex: 1;
+                    background-color: #2C313C;
+                    padding: 15px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+                }
+                .stats {
+                    flex: 1;
+                    background-color: #2C313C;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+                }
+                .stats ul {
+                    list-style: none;
+                    padding: 0;
+                }
+                .stats li {
+                    margin-bottom: 10px;
+                    font-size: 1rem;
+                    color: #BBB;
+                }
+                .stats li strong {
+                    color: #FFF;
+                }
+                /* Graphiques */
+                .graphs {
+                    max-width: 1200px;
+                    margin: auto;
+                }
+                .graphs h2 {
+                    text-align: center;
+                }
+                .grid-container {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                }
+                .grid-container iframe {
+                    width: 100%;
+                    height: 500px;
+                    border: none;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+                }
+                /* Bouton retour */
+                a.button {
+                    display: block;
+                    text-align: center;
+                    background: #61DAFB;
+                    color: #1E1E2F;
+                    font-weight: bold;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    text-decoration: none;
+                    margin: 20px auto;
+                    width: 200px;
+                }
+                a.button:hover {
+                    background: #529EC4;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Analyse de l'Activité 17756388828</h1>
+            <a href="/activity" class="button">Retour aux Activités</a>
+
+            <!-- Conteneur principal : Carte et Résumé -->
+            <div class="container">
+                <div class="map">
+                    <h2>Carte du Parcours</h2>
+                    
+                        <iframe src="/static/activity_pages/activity_17756388828_map.html"></iframe>
+                    
+                </div>
+                <div class="stats">
+                    <h2>Résumé de la Séance</h2>
+                    <ul>
+                        <li><strong>Distance :</strong> 4.0 km</li>
+                        <li><strong>Durée :</strong> 20.99 minutes</li>
+                        <li><strong>Allure Moyenne :</strong> 5:14 min/km</li>
+                        <li><strong>FC Moyenne :</strong> N/A BPM</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Graphiques -->
+            <div class="graphs">
+                <h2>Graphiques</h2>
+                <div class="grid-container">
+                    
+                        <iframe src="/static/graphs/17756388828_hr_zones.html"></iframe>
+                    
+                        <iframe src="/static/graphs/17756388828_hr.html"></iframe>
+                    
+                        <iframe src="/static/graphs/17756388828_pace.html"></iframe>
+                    
+                        <iframe src="/static/graphs/17756388828_cadence.html"></iframe>
+                    
+                </div>
+            </div>
+        </body>
+        </html>
+        

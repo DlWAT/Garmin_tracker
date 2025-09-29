@@ -1,0 +1,50 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #1E1E2F;
+    color: #FFF;
+}
+
+header {
+    text-align: center;
+    padding: 20px;
+    background-color: #282C34;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+header nav a {
+    color: #61DAFB;
+    margin: 0 15px;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    display: flex;
+    flex-direction: column; /* Dispose les graphiques en colonne */
+    align-items: center; /* Centre les graphiques horizontalement */
+    padding: 0; /* Supprime les marges intérieures du conteneur */
+    gap: 0; /* Supprime tout espacement entre les conteneurs graphiques */
+}
+
+.graph-container {
+    width: 98%; /* Utilise presque toute la largeur disponible */
+    max-width: 1400px; /* Largeur maximale */
+    height: 650px; /* Ajuste la hauteur pour éviter les scrollbars */
+    margin: 0; /* Supprime les marges autour des conteneurs */
+    padding: 0; /* Supprime les marges intérieures */
+}
+
+.graph-container iframe {
+    border: none;
+    width: 100%; /* Les graphiques occupent toute la largeur disponible */
+    height: 100%; /* La hauteur remplit complètement le conteneur */
+    margin: 0; /* Supprime les marges implicites des navigateurs */
+    padding: 0; /* Supprime le padding implicite des navigateurs */
+    display: block; /* Évite tout comportement inline indésirable */
+}

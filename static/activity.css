@@ -25,218 +25,101 @@ header nav a:hover {
     text-decoration: underline;
 }
 
-/* Conteneurs */
-.container {
+/* Bouton Retour aux Activités */
+.update-button {
+    text-align: center;
+    margin: 20px 0;
+}
+
+a.button {
+    display: inline-block;
+    background: #61DAFB;
+    color: #1E1E2F;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin: 20px auto;
+    width: 200px;
+    text-align: center;
+}
+
+a.button:hover {
+    background: #529EC4;
+}
+
+/* Conteneur principal */
+.content {
     display: flex;
     gap: 20px;
     padding: 20px;
+    align-items: flex-start; /* Aligne les éléments en haut */
 }
 
-.calendar-container {
-    flex: 2;
+/* Graphiques */
+.graph-container {
+    flex: 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Deux colonnes */
+    gap: 20px; /* Espacement entre les graphiques */
+}
+
+.graph-container iframe {
+    width: 80%;
+    height: 500px; /* Hauteur augmentée */
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Liste des activités */
+.activity-list {
+    flex: 1;
     background-color: #2C313C;
     padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    max-height: 800px;
+    overflow-y: auto;
+    min-width: 300px; /* Largeur minimale */
 }
 
-.list-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-/* Navigation calendrier */
-.calendar-navigation {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    font-size: 1.5rem;
+.activity-list h2 {
     color: #61DAFB;
-}
-
-.calendar-navigation button {
-    background-color: #61DAFB;
-    color: #1E1E2F;
-    border: none;
-    padding: 5px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.calendar-navigation button:hover {
-    background-color: #529EC4;
-}
-
-/* Calendrier */
-.calendar-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.calendar-table th, .calendar-table td {
-    width: 14.28%;
-    height: 100px;
-    text-align: center;
-    vertical-align: top;
-    border: 1px solid #3A3F47;
-    padding: 5px;
-}
-
-.calendar-table th {
-    background-color: #40444B;
-    color: #FFF;
-    font-weight: bold;
-}
-
-.day-cell {
-    position: relative;
-    background-color: #3A3F47;
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-.day-cell:hover {
-    background-color: #505763;
-    cursor: pointer;
-}
-
-/* Événements */
-.activity-event {
-    background-color: #FF9800;
-    color: white;
-    padding: 5px;
-    margin: 3px 0;
-    border-radius: 3px;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-.training-event {
-    background-color: #4CAF50;
-    color: #FFF;
-    padding: 5px;
-    margin: 3px 0;
-    border-radius: 3px;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-.competition-event {
-    background-color: #F44336;
-    color: #FFF;
-    padding: 5px;
-    margin: 3px 0;
-    border-radius: 3px;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-/* Info-bulle */
-.tooltip {
-    position: absolute;
-    background-color: #40444B;
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    display: none;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-    white-space: pre-line;
-}
-
-/* Formulaires */
-form {
-    display: flex;
-    gap: 10px;
-    align-items: center;
     margin-bottom: 15px;
-    flex-wrap: wrap; /* Permet un retour à la ligne si l'espace est trop limité */
 }
 
-form input, form button {
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 5px;
-    border: 1px solid #61DAFB;
-    flex: 1;
-    max-width: calc(33% - 10px);
-    min-width: 100px;
-}
-
-form input[type="text"], form input[type="date"], form input[type="number"] {
-    background-color: #FFF;
-    color: #000;
-}
-
-form button {
-    background-color: #61DAFB;
-    color: #1E1E2F;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-    max-width: 100px;
-}
-
-form button:hover {
-    background-color: #529EC4;
-}
-
-/* Listes */
-.list h2 {
-    margin-bottom: 15px;
-    color: #61DAFB;
-    font-size: 1.2rem;
-    border-bottom: 2px solid #61DAFB;
-    padding-bottom: 5px;
-}
-
-ul {
+.activity-list ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-ul li {
+.activity-list li {
     background-color: #3A3F47;
     padding: 10px;
     border-radius: 5px;
     margin-bottom: 10px;
+    font-size: 0.9rem;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-}
-
-ul li div {
-    flex: 1;
-}
-
-ul li strong {
-    display: block;
-    font-size: 1rem;
-    margin-bottom: 5px;
-    color: #FFF;
-}
-
-ul li p {
-    font-size: 0.9rem;
     color: #BBB;
+    transition: background-color 0.2s ease-in-out;
 }
 
-ul li button {
-    background-color: #F44336;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
+.activity-list li:hover {
+    background-color: #505763;
 }
 
-ul li button:hover {
-    background-color: #E53935;
+.activity-list li strong {
+    color: #FFF;
+    font-weight: bold;
+}
+
+.activity-list li a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
 }

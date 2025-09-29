@@ -1,0 +1,131 @@
+/* Style général */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #1E1E2F;
+    color: #FFF;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* En-têtes */
+h1, h2 {
+    text-align: center;
+    color: #61DAFB;
+    margin-bottom: 20px;
+}
+
+/* Conteneur principal */
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 1400px; /* Plus large */
+    margin: auto;
+    gap: 20px;
+}
+
+/* Carte */
+.map {
+    flex: 2; /* Occupe plus d'espace */
+    min-width: 800px; /* Largeur minimale augmentée */
+    background-color: #2C313C;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    height: 600px; /* Hauteur augmentée */
+}
+
+/* Résumé et statistiques */
+.stats {
+    flex: 1; /* Prend moins d'espace que la carte */
+    height: 600px;
+    min-width: 400px;
+    padding: 20px;
+    background: #2C313C;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+.stats ul {
+    list-style: none;
+    padding: 0;
+}
+
+.stats li {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    color: #BBB;
+}
+
+.stats li strong {
+    color: #FFF;
+}
+
+/* Graphiques */
+.graphs {
+    width: 100%;
+    margin-top: 20px;
+    padding: 0 20px;
+}
+
+.graphs .grid-container {
+    display: grid;
+    grid-template-columns: 1fr; /* Une seule colonne pour plus de largeur */
+    gap: 20px;
+}
+
+.graphs iframe {
+    height: 600px; /* Hauteur augmentée */
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Carte iframe */
+iframe.map {
+    width: 100%;
+    height: 600px; /* Hauteur plus grande */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Bouton Retour aux Activités */
+a.button {
+    display: block;
+    text-align: center;
+    background: #61DAFB;
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: #1E1E2F;
+    font-weight: bold;
+    text-decoration: none;
+    margin: 20px auto;
+    width: 200px;
+}
+
+a.button:hover {
+    background: #529EC4;
+}
+
+/* Améliorations visuelles */
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    margin-bottom: 10px;
+    color: #DDD;
+}
+
+/* Liens */
+a {
+    color: #61DAFB;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+a:hover {
+    color: #FFFFFF;
+}

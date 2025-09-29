@@ -1,0 +1,87 @@
+/* Style général */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #1E1E2F;
+    color: #FFF;
+    text-align: center;
+    line-height: 1.6;
+}
+
+header {
+    padding: 20px;
+    background: #2C313C;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+.logo-container {
+    margin: 0 auto 20px auto;
+}
+
+.logo {
+    max-width: 300px;
+    height: auto;
+}
+
+h1 {
+    color: #61DAFB;
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+/* Navigation */
+nav {
+    background-color: #61DAFB;
+    padding: 10px 0;
+}
+
+nav .menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+nav .menu li {
+    display: inline;
+}
+
+nav .menu a {
+    color: #1E1E2F;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+nav .menu a:hover {
+    background: #2C313C;
+    color: #FFF;
+}
+
+/* Sections */
+.section {
+    padding: 60px 20px;
+    background-color: #2C313C;
+    margin: 20px auto;
+    max-width: 1000px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+.section h2 {
+    color: #61DAFB;
+    margin-bottom: 20px;
+}
+
+/* Pied de page */
+footer {
+    padding: 10px 0;
+    background: #1E1E2F;
+    color: #BBB;
+    font-size: 0.9rem;
+}

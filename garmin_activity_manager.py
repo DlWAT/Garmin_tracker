@@ -7,27 +7,37 @@ import numpy as np
 import plotly.graph_objects as go
 import re
 import time
+import folium
 
 class GarminActivityManager:
     def __init__(self, user_id):
         self.user_id = user_id
+        os.makedirs("static/maps", exist_ok=True)
+        os.makedirs("static/graphs", exist_ok=True)
         self.activities_file = os.path.join("data", f"{self.user_id}_activities.json")
+        self.details_file = os.path.join("data", f"{self.user_id}_activity_details.json")
         os.makedirs("data", exist_ok=True)
-        self.activities = self._load_data()
-
-    def _load_data(self):
-        """Charge uniquement les activités pour l'utilisateur spécifié."""
-        if os.path.exists(self.activities_file):
-            with open(self.activities_file, 'r') as f:
+        self.activities = self._load_data(self.activities_file)
+        self.details = self._load_data(self.details_file)
+        
+    def _load_data(self, file_path):
+        """Charge les données depuis un fichier JSON."""
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
                 try:
                     data = json.load(f)
-                    logging.info(f"Données chargées depuis {self.activities_file}.")
-                    return data
+                    if isinstance(data, list):
+                        return [
+                            activity for activity in data
+                            if isinstance(activity, dict)
+                        ]
+                    elif isinstance(data, dict):
+                        return data
                 except json.JSONDecodeError:
-                    logging.warning(f"Fichier corrompu : {self.activities_file}.")
-        else:
-            logging.error(f"Fichier non trouvé : {self.activities_file}.")
+                    logging.error(f"Fichier JSON corrompu : {file_path}")
+        logging.error(f"Fichier non trouvé ou illisible : {file_path}")
         return []
+
 
     def plot_interactive_graphs(self, output_dir):
         """Crée des graphiques interactifs pour l'utilisateur spécifié et pour les activités running."""
@@ -191,7 +201,24 @@ class GarminActivityManager:
 
             # Pause pour éviter de surcharger l'API
             time.sleep(5)
-
+        for activity in self.activities.values():
+            activity_id = activity.get("activityId")
+            if not activity_id:
+                continue
+            
+            details = self.details.get(activity_id)
+            if details:
+                metrics = details.get("activityDetailMetrics", [])
+                for metric in metrics:
+                    metric_name = metric.get("key")
+                    data = {
+                        "time": metric.get("timestamps", []),
+                        metric_name: metric.get("values", [])
+                    }
+                    self.create_metric_graph(activity_id, metric_name, data)
+                    
+                    
+                    
     def _fetch_activity_details(self, activity_id):
         """Simule la récupération des détails d'une activité via l'API Garmin."""
         # Remplacer cette simulation par un vrai appel API
@@ -222,3 +249,161 @@ class GarminActivityManager:
         with open(file_path, "w") as f:
             json.dump(trainings, f, indent=4)
         logging.info(f"Trainings sauvegardés dans {file_path}.")
+
+    def plot_tracking_graphs(self, output_dir):
+        """Crée des graphiques de suivi pour les 6 derniers mois, semaine par semaine."""
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Définir les zones de fréquence cardiaque
+        fc_zones = [
+            {"zone": "Zone 1: Endurance fondamentale (60-120 bpm)", "min": 60, "max": 120},
+            {"zone": "Zone 2: Endurance active (120-140 bpm)", "min": 120, "max": 140},
+            {"zone": "Zone 3: Seuil anaérobie (140-160 bpm)", "min": 140, "max": 160},
+            {"zone": "Zone 4: Intensité maximale (>160 bpm)", "min": 160, "max": 300},
+        ]
+
+        # Préparer les résultats pour l'agrégation
+        weekly_data = []
+
+        # Filtrer les activités des 6 derniers mois
+        six_months_ago = datetime.now() - timedelta(days=180)
+
+        for summary in self.activities:  # Parcourir la liste
+            activity_id = summary.get("activityId")
+            start_time_local = summary.get("startTimeLocal")
+
+            if not start_time_local or datetime.fromisoformat(start_time_local) < six_months_ago:
+                continue
+
+            details = self.details.get(activity_id)
+            if not details:
+                logging.warning(f"Détails introuvables pour l'activité ID {activity_id}.")
+                continue
+
+            # Identifier l'index de la fréquence cardiaque
+            hr_index = None
+            for descriptor in details.get("metricDescriptors", []):
+                if descriptor["key"] == "directHeartRate":
+                    hr_index = descriptor["metricsIndex"]
+                    break
+
+            if hr_index is None:
+                logging.warning(f"Aucune donnée de fréquence cardiaque pour l'activité ID {activity_id}.")
+                continue
+
+            # Parcourir les détails pour calculer le temps dans chaque zone
+            zone_durations = {zone["zone"]: 0 for zone in fc_zones}
+            for metric in details.get("activityDetailMetrics", []):
+                hr = metric["metrics"][hr_index]
+                if hr is not None:
+                    for zone in fc_zones:
+                        if zone["min"] <= hr < zone["max"]:
+                            zone_durations[zone["zone"]] += 1  # 1 seconde par mesure
+
+            # Calcul de la semaine
+            try:
+                start_time = datetime.fromisoformat(start_time_local)
+                week_start = start_time - timedelta(days=start_time.weekday())
+                weekly_data.append({"week_start": week_start, **zone_durations})
+                logging.info(f"Activité ID {activity_id}: ajoutée avec week_start={week_start} et zones={zone_durations}")
+            except ValueError:
+                logging.warning(f"Format de date invalide pour l'activité ID {activity_id}. Ignorée.")
+
+        # Vérifier les données avant création du DataFrame
+        if not weekly_data:
+            logging.warning("Aucune donnée hebdomadaire disponible pour créer le graphique.")
+            return
+
+        # Créer le DataFrame
+        df = pd.DataFrame(weekly_data)
+        logging.info(f"Données hebdomadaires: {df.head()}")
+
+        if df.empty:
+            logging.warning("Aucune donnée à regrouper. Vérifiez les activités et les détails.")
+            return
+
+        # Agréger les données par semaine
+        df = df.groupby("week_start").sum()
+
+        # Graphique empilé
+        fig = go.Figure()
+        for zone in fc_zones:
+            zone_name = zone["zone"]
+            if zone_name in df.columns:
+                fig.add_trace(go.Bar(
+                    x=df.index,
+                    y=df[zone_name],
+                    name=zone_name
+                ))
+
+        fig.update_layout(
+            barmode="stack",
+            title="Temps dans les zones de fréquence cardiaque (6 derniers mois)",
+            xaxis_title="Semaine",
+            yaxis_title="Temps (secondes)",
+            template="plotly_dark",
+            legend=dict(
+                title="Zones de fréquence cardiaque",
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5
+            ),
+            height=500,
+            width=1400
+        )
+        fig.write_html(os.path.join(output_dir, "hr_zones_weekly_detailed.html"))
+        
+    def create_activity_map(self, activity_id, path):
+        """
+        Génère une carte interactive pour l'activité.
+        """
+        if not path:
+            logging.warning(f"Aucun parcours pour l'activité {activity_id}.")
+            return
+        
+        try:
+            # Crée la carte centrée sur le premier point du parcours
+            m = folium.Map(location=[path[0]["lat"], path[0]["lon"]], zoom_start=14)
+            
+            # Ajoute les points du parcours
+            points = [(p["lat"], p["lon"]) for p in path]
+            folium.PolyLine(points, color="blue", weight=2.5).add_to(m)
+            
+            # Sauvegarde la carte
+            map_path = f"static/maps/activity_map_{activity_id}.html"
+            m.save(map_path)
+            logging.info(f"Carte sauvegardée pour l'activité {activity_id} : {map_path}")
+        except Exception as e:
+            logging.error(f"Erreur lors de la création de la carte pour l'activité {activity_id}: {e}")
+
+    def create_metric_graph(self, activity_id, metric_name, data):
+        """
+        Génère un graphique pour une métrique donnée d'une activité.
+        """
+        if not data:
+            logging.warning(f"Aucune donnée pour la métrique {metric_name} de l'activité {activity_id}.")
+            return
+        
+        try:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=data["time"],
+                y=data[metric_name],
+                mode="lines",
+                name=metric_name
+            ))
+            fig.update_layout(
+                title=f"{metric_name} au cours du temps",
+                xaxis_title="Temps",
+                yaxis_title=metric_name,
+                template="plotly_dark"
+            )
+            
+            # Sauvegarde le graphique
+            graph_path = f"static/graphs/{activity_id}_{metric_name}.html"
+            fig.write_html(graph_path)
+            logging.info(f"Graphique sauvegardé pour {metric_name} de l'activité {activity_id} : {graph_path}")
+        except Exception as e:
+            logging.error(f"Erreur lors de la création du graphique pour {metric_name} de l'activité {activity_id}: {e}")

@@ -3,6 +3,7 @@ from garmin_activity_manager import GarminActivityManager
 from garmin_health_manager import GarminHealthManager
 from training_analysis import TrainingAnalysis
 from garmin_client_manager import GarminClientHandler
+from activity_page_manager import ActivityPageManager
 
 import os
 import json 
@@ -24,8 +25,9 @@ for folder in ["static/activity", "static/health", "static/training", "data"]:
 activity_manager = GarminActivityManager(user_id)
 health_manager = GarminHealthManager(user_id)
 training_analysis = TrainingAnalysis(activity_manager, health_manager)
-garmin_handler = GarminClientHandler(EMAIL, PASSWORD,user_id)
-garmin_handler.login()
+activity_page_manager = ActivityPageManager()
+# garmin_handler = GarminClientHandler(EMAIL, PASSWORD,user_id)
+# garmin_handler.login()
 
 
 @app.route("/")
@@ -42,6 +44,7 @@ def activity():
 
     formatted_activities = []
     for activity in activity_manager.activities:
+        activity_id = activity.get("activityId")  # Récupération de l'ID de l'activité
         date = activity.get("startTimeLocal", "Date inconnue")
         distance = round(activity.get("distance", 0) / 1000)  # Arrondi au km
         duration_minutes = round(activity.get("duration", 0) / 60)
@@ -56,12 +59,14 @@ def activity():
             avg_pace = f"{pace_minutes}m {pace_seconds:02}s/km"
 
         formatted_activities.append({
+            "activityId": activity_id,  # Ajout de l'ID ici
             "date": date if date != "Date inconnue" else "Date inconnue",
             "distance": distance,
             "duration": f"{hours}h {minutes:02d}m",
             "avg_pace": avg_pace,
         })
 
+    #print("Formatted activities:", formatted_activities)  # Debug pour vérifier l'ID
     return render_template("activity.html", graphs=activity_graphs, activities=formatted_activities)
 
 @app.route("/update_activity")
@@ -262,6 +267,35 @@ def remove_training(name):
     return redirect(url_for("training"))
 
 
+@app.route("/tracking")
+def tracking():
+    """Affiche les graphiques de suivi."""
+    activity_manager.plot_tracking_graphs("static/tracking")
 
+    # Lister les graphiques disponibles
+    tracking_graphs = [f"/static/tracking/{f}" for f in os.listdir("static/tracking") if f.endswith(".html")]
+
+    return render_template("tracking.html", graphs=tracking_graphs)
+
+@app.route("/activity/<activity_id>")
+def activity_details(activity_id):
+    """Affiche les détails d'une activité."""
+    activity = next((a for a in activity_manager.activities if str(a.get("activityId")) == str(activity_id)), None)
+    details = activity_manager.details.get("activities", {}).get(str(activity_id), {}).get("details", {})
+
+    if not activity or not details:
+        flash("Détails de l'activité introuvables.", "error")
+        return redirect(url_for("activity"))
+
+    # Générer la page statique
+    page_file = activity_page_manager.generate_activity_page(activity, details)
+    if page_file:
+        print(f"Redirection vers : {page_file}")
+        return redirect(page_file)  # Redirige vers le chemin généré
+    else:
+        flash("Erreur lors de la génération de la page.", "error")
+        return redirect(url_for("activity"))
+   
+    
 if __name__ == "__main__":
     app.run(debug=True)
