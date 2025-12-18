@@ -16,6 +16,7 @@ class GarminClientHandler:
         self.email = email
         self.password = password
         self.user_id = user_id
+        self.output_dir = output_dir  # ← ajoute cette ligne
         self.output_file = os.path.join(output_dir, f"{user_id}_activity_details.json")
         self.client = None
         os.makedirs(output_dir, exist_ok=True)
@@ -87,22 +88,25 @@ class GarminClientHandler:
 
     def update_activity_data(self):
         """
-        Met à jour les résumés et les détails des activités dans un fichier JSON unique.
+        Met à jour les résumés et les détails des activités dans un fichier combiné
+        ET génère aussi la liste des résumés dans <user>_activities.json pour le dashboard.
         """
         logging.info("Début de la mise à jour des données d'activités...")
-        
-        # Charger les données existantes
-        data = self._load_json()
 
-        # Récupérer les résumés d'activités
-        activities = self.get_activities(0, 50)  # Limité à 50 pour cet exemple
+        # Charger les données existantes (fichier combiné)
+        data = self._load_json()
+        if "activities" not in data or not isinstance(data["activities"], dict):
+            data["activities"] = {}
+
+        # Récupérer les résumés d'activités (à ajuster selon tes besoins)
+        activities = self.get_activities(0, 50)  # ex: 50 dernières
         for activity in activities:
             activity_id = activity.get("activityId")
             if not activity_id:
                 logging.warning("Activité sans ID, ignorée.")
                 continue
 
-            # Si l'activité est déjà dans le fichier, ignorer
+            # Si l'activité est déjà présente, on l'ignore (comportement initial)
             if activity_id in data["activities"]:
                 logging.info(f"Activité {activity_id} déjà enregistrée, ignorée.")
                 continue
@@ -113,16 +117,42 @@ class GarminClientHandler:
                 logging.warning(f"Impossible de récupérer les détails pour l'activité {activity_id}.")
                 continue
 
-            # Sauvegarder l'activité dans le JSON
+            # Ajouter au fichier combiné
             data["activities"][activity_id] = {
                 "summary": activity,
                 "details": details,
             }
-            logging.info(f"Activité {activity_id} ajoutée.")
+            logging.info(f"Activité {activity_id} ajoutée au combiné.")
 
-            # Pause pour éviter de surcharger l'API
+            # Évite de surcharger l'API
             time.sleep(SLEEP_TIME)
 
-        # Sauvegarder les données mises à jour
+        # 1) Sauvegarder le COMBINÉ
         self._save_json(data)
+        logging.info("Fichier combiné mis à jour.")
+
+        # 2) EXTRAIRE TOUS LES SUMMARY et les écrire dans <user>_activities.json
+        activities_list = []
+        for aid, pack in data.get("activities", {}).items():
+            if isinstance(pack, dict):
+                summary = pack.get("summary")
+                if isinstance(summary, dict):
+                    activities_list.append(summary)
+
+        # Chemin du fichier des résumés
+        # - si tu as ajouté self.output_dir : utilise-le
+        # - sinon prends le dossier du fichier combiné
+        activities_path = (
+            os.path.join(self.output_dir, f"{self.user_id}_activities.json")
+            if hasattr(self, "output_dir")
+            else os.path.join(os.path.dirname(self.output_file), f"{self.user_id}_activities.json")
+        )
+
+        try:
+            with open(activities_path, "w", encoding="utf-8") as f:
+                json.dump(activities_list, f, indent=4, ensure_ascii=False)
+            logging.info(f"Résumés sauvegardés dans {activities_path} ({len(activities_list)} activités).")
+        except Exception as e:
+            logging.error(f"Erreur écriture {activities_path}: {e}")
+
         logging.info("Mise à jour des données d'activités terminée.")

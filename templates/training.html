@@ -1,226 +1,457 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendrier interactif</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            let trainings = {{ trainings|tojson }};
-            let competitions = {{ competitions|tojson }};
-            let activities = {{ activities|tojson }};
-            const calendarBody = document.getElementById("calendar-body");
-            const monthYearDisplay = document.getElementById("month-year");
-            const tooltip = document.getElementById("tooltip");
+  <meta charset="UTF-8" />
+  <title>Calendrier interactif</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
+  <style>
+    /* Pastilles */
+    .activity-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#2b2f36; color:#eee; border-radius:8px; font-size:13px; }
+    .training-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#2ecc71; color:#fff; border-radius:8px; font-size:13px; }
+    .competition-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#e74c3c; color:#fff; border-radius:8px; font-size:13px; }
+    .planned-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#3b82f6; color:#fff; border-radius:8px; font-size:13px; }
+    .clickable{ cursor:pointer; }
+    .badge-link{ text-decoration:none; display:inline-block; }
 
-            let currentDate = new Date();
+    /* Layout similaire à ta version d'origine */
+    body{background:#101318; color:#e5e7eb; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+    header{padding:16px 20px; border-bottom:1px solid #1f2430; background:#0d1117;}
+    header h1{margin:6px 0 0 0; font-size:22px; font-weight:600;}
+    nav a{color:#cbd5e1; text-decoration:none; margin-right:12px; padding:6px 8px; border-radius:6px;}
+    nav a:hover{background:#1a2230;}
+    .wrapper{max-width:1200px; margin:18px auto; padding:0 16px;}
+    .calendar-navigation{display:flex; align-items:center; gap:10px; margin:10px 0;}
+    .calendar-navigation button{background:#1f2937; color:#e5e7eb; border:1px solid #334155; padding:6px 10px; border-radius:6px; cursor:pointer;}
+    .calendar-table{width:100%; border-collapse:collapse; margin-top:8px;}
+    .calendar-table th,.calendar-table td{border:1px solid #1f2430; width:14.285%; vertical-align:top; height:110px; padding:8px; position:relative;}
+    .day-cell{background:#151923;}
+    .empty-cell{background:#0f1320;}
 
-            const renderCalendar = () => {
-                calendarBody.innerHTML = ""; // Réinitialise le contenu du calendrier
+    .lists{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-top:22px;}
+    .list{background:#121722; border:1px solid #1f2430; padding:14px; border-radius:10px;}
+    .list h2{margin:0 0 10px 0; font-size:18px;}
+    .list form{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+    .list input,.list select,.list button{padding:8px 10px; border-radius:6px; border:1px solid #334155; background:#0e1420; color:#e5e7eb;}
+    .list button{background:#1f2937; cursor:pointer;}
+    .list ul{list-style:none; padding:0; margin:0;}
+    .list li{display:flex; align-items:center; justify-content:space-between; border-top:1px dashed #232939; padding:8px 0;}
+    .delete-button{background:#262b36; color:#e5e7eb; border:1px solid #3a4154; padding:6px 10px; border-radius:6px; cursor:pointer;}
 
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth();
-                const firstDay = new Date(year, month, 1).getDay();
-                const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1; // Débute lundi
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-                monthYearDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
-
-                let row = document.createElement("tr");
-
-                // Ajouter des cases vides avant le premier jour
-                for (let i = 0; i < adjustedFirstDay; i++) {
-                    const emptyCell = document.createElement("td");
-                    emptyCell.className = "empty-cell";
-                    row.appendChild(emptyCell);
-                }
-
-                // Ajouter les cellules pour chaque jour
-                for (let day = 1; day <= daysInMonth; day++) {
-                    if (row.children.length === 7) {
-                        calendarBody.appendChild(row);
-                        row = document.createElement("tr");
-                    }
-
-                    const dayCell = document.createElement("td");
-                    dayCell.className = "day-cell";
-                    dayCell.textContent = day;
-
-                    // Ajouter les événements pour la date actuelle
-                    const events = [];
-                    activities.forEach(activity => {
-                        if (activity.date === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`) {
-                            events.push({ type: 'activity', ...activity });
-                        }
-                    });
-                    trainings.forEach(training => {
-                        if (training.date === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`) {
-                            events.push({ type: 'training', ...training });
-                        }
-                    });
-                    competitions.forEach(competition => {
-                        if (competition.date === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`) {
-                            events.push({ type: 'competition', ...competition });
-                        }
-                    });
-
-                    // Afficher les événements dans les cellules
-                    events.forEach(event => {
-                        const eventDiv = document.createElement("div");
-                        eventDiv.className =
-                            event.type === 'activity'
-                                ? "activity-event"
-                                : event.type === 'training'
-                                ? "training-event"
-                                : "competition-event";
-                        eventDiv.textContent = event.name;
-                        eventDiv.addEventListener("mouseenter", (e) => showTooltip(e, event));
-                        eventDiv.addEventListener("mouseleave", hideTooltip);
-                        dayCell.appendChild(eventDiv);
-                    });
-
-                    row.appendChild(dayCell);
-                }
-
-                // Ajouter la dernière ligne si elle contient des éléments
-                if (row.children.length > 0) {
-                    calendarBody.appendChild(row);
-                }
-            };
-
-            const showTooltip = (event, data) => {
-                tooltip.style.display = "block";
-                tooltip.style.top = `${event.pageY + 10}px`;
-                tooltip.style.left = `${event.pageX + 10}px`;
-                tooltip.textContent = `${data.type === 'activity' ? "Activité" : data.type === 'training' ? "Entraînement" : "Compétition"}: ${data.name}
-Date: ${data.date}
-Distance: ${(data.distance / 1000).toFixed(2)} km
-Lieu: ${data.locationName || 'Lieu inconnu'}
-Description: ${data.description || 'Aucune description'}`;
-            };
-
-            const hideTooltip = () => {
-                tooltip.style.display = "none";
-            };
-
-            const addEvent = (type) => {
-                const name = document.getElementById(`${type}-name`).value;
-                const date = document.getElementById(`${type}-date`).value;
-                const distance = document.getElementById(`${type}-distance`).value;
-
-                if (!name || !date) {
-                    alert("Veuillez remplir tous les champs.");
-                    return;
-                }
-
-                const newEvent = { name, date, distance: parseFloat(distance) || "N/A" };
-                if (type === "training") {
-                    trainings.push(newEvent);
-                } else {
-                    competitions.push(newEvent);
-                }
-
-                renderCalendar();
-                renderList();
-                document.getElementById(`${type}-form`).reset();
-            };
-
-            const renderList = () => {
-                const competitionList = document.getElementById("competition-list");
-                const trainingList = document.getElementById("training-list");
-
-                competitionList.innerHTML = competitions.map(competition => `
-                    <li>
-                        <div>
-                            <strong>${competition.name}</strong>
-                            <p>Date: ${competition.date} | Distance: ${competition.distance || 'N/A'} km</p>
-                        </div>
-                        <button class="delete-button" onclick="deleteCompetition('${competition.name}', '${competition.date}')">Supprimer</button>
-                    </li>
-                `).join("");
-
-                trainingList.innerHTML = trainings.map(training => `
-                    <li>
-                        <div>
-                            <strong>${training.name}</strong>
-                            <p>Date: ${training.date} | Distance: ${training.distance || 'N/A'} km</p>
-                        </div>
-                        <button class="delete-button" onclick="deleteTraining('${training.name}', '${training.date}')">Supprimer</button>
-                    </li>
-                `).join("");
-            };
-
-            document.getElementById("prev-month").addEventListener("click", () => {
-                currentDate.setMonth(currentDate.getMonth() - 1);
-                renderCalendar();
-            });
-
-            document.getElementById("next-month").addEventListener("click", () => {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-                renderCalendar();
-            });
-
-            renderCalendar();
-            renderList();
-        });
-    </script>
+    .tooltip{
+      position:absolute; display:none; background:#0f172a; color:#e5e7eb;
+      border:1px solid #334155; padding:8px 10px; border-radius:8px;
+      white-space:pre-wrap; z-index:50; max-width:280px;
+    }
+    .tooltip .actions{margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;}
+    .tooltip .actions button{padding:4px 8px; border:1px solid #3a4154; background:#1f2937; color:#e5e7eb; border-radius:6px; cursor:pointer; font-size:12px;}
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Calendrier interactif</h1>
-        <nav>
-            <a href="/">Accueil</a>
-            <a href="/activity">Activités</a>
-            <a href="/health">Santé</a>
-            <a href="/training">Calendrier</a>
-        </nav>
-    </header>
-    <main class="container">
-        <section class="calendar-container">
-            <div class="calendar-navigation">
-                <button id="prev-month">◀</button>
-                <span id="month-year"></span>
-                <button id="next-month">▶</button>
-            </div>
-            <table class="calendar-table">
-                <thead>
-                    <tr>
-                        <th>Lun</th>
-                        <th>Mar</th>
-                        <th>Mer</th>
-                        <th>Jeu</th>
-                        <th>Ven</th>
-                        <th>Sam</th>
-                        <th>Dim</th>
-                    </tr>
-                </thead>
-                <tbody id="calendar-body"></tbody>
-            </table>
-        </section>
-        <section class="list-container">
-            <div class="list">
-                <h2>Ajouter une compétition</h2>
-                <form id="competition-form">
-                    <input type="text" id="competition-name" placeholder="Nom de la compétition" required>
-                    <input type="date" id="competition-date" required>
-                    <input type="number" id="competition-distance" placeholder="Distance (km)" step="0.1">
-                    <button type="button" id="add-competition">Ajouter</button>
-                </form>
-                <ul id="competition-list"></ul>
-            </div>
-            <div class="list">
-                <h2>Ajouter un entraînement</h2>
-                <form id="training-form">
-                    <input type="text" id="training-name" placeholder="Nom de l'entraînement" required>
-                    <input type="date" id="training-date" required>
-                    <input type="number" id="training-distance" placeholder="Distance (km)" step="0.1">
-                    <button type="button" id="add-training">Ajouter</button>
-                </form>
-                <ul id="training-list"></ul>
-            </div>
-        </section>
-        <div id="tooltip" class="tooltip"></div>
-    </main>
+  <header>
+    <nav>
+      <a href="/">Accueil</a>
+      <a href="/activity">Activités</a>
+      <a href="/health">Santé</a>
+      <a href="/training" class="active">Calendrier</a>
+    </nav>
+    <h1>Calendrier interactif</h1>
+  </header>
+
+  <div class="wrapper">
+    <section>
+      <div class="calendar-navigation">
+        <button id="prev-month">◀</button>
+        <span id="month-year"></span>
+        <button id="next-month">▶</button>
+      </div>
+
+      <table class="calendar-table">
+        <thead>
+          <tr>
+            <th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th>
+          </tr>
+        </thead>
+        <tbody id="calendar-body"></tbody>
+      </table>
+    </section>
+
+    <section class="lists">
+      <div class="list">
+        <h2>Ajouter une compétition</h2>
+        <form action="{{ url_for('add_competition') }}" method="post">
+          <input type="text"   name="name"     placeholder="Nom de la compétition" required>
+          <input type="date"   name="date"     required>
+          <input type="text"   name="location" placeholder="Lieu">
+          <button type="submit">Ajouter</button>
+        </form>
+        <ul id="competition-list"></ul>
+      </div>
+
+      <div class="list">
+        <h2>Ajouter un entraînement</h2>
+        <form action="{{ url_for('add_training') }}" method="post">
+          <input type="text" name="name" placeholder="Nom de l'entraînement" required>
+          <input type="date" name="date" required>
+          <button type="submit">Ajouter</button>
+        </form>
+        <ul id="training-list"></ul>
+      </div>
+
+      <div class="list">
+        <h2>Ajouter une séance planifiée (bleu)</h2>
+        <form action="{{ url_for('add_plan') }}" method="post">
+          <input type="text"   name="name" placeholder="Nom de la séance" required>
+          <input type="date"   name="date" required>
+          <select name="ptype" title="type">
+            <option value="">Type (optionnel)</option>
+            <option value="training">Entraînement</option>
+            <option value="competition">Compétition</option>
+          </select>
+          <input type="number" step="0.1" name="distance" placeholder="Distance (km)">
+          <input type="number" name="duration" placeholder="Durée (min)">
+          <button type="submit">Planifier</button>
+        </form>
+        <ul id="plan-list"></ul>
+      </div>
+    </section>
+
+    <div id="tooltip" class="tooltip"></div>
+  </div>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Données injectées par Flask
+    let trainings    = {{ trainings|tojson }};
+    let competitions = {{ competitions|tojson }};
+    let activities   = {{ activities|tojson }};    // {id,name,date,distance,durationMin,typeKey,label}
+    let plans        = {{ plans|tojson }};         // {name,date,ptype,distance,durationMin}
+
+    // Dédup simple par source
+    const uniqBy = (arr, keyFn) => [...new Map(arr.map(x => [keyFn(x), x])).values()];
+    trainings    = uniqBy(trainings,    t => `${(t.name||'').trim().toLowerCase()}|${(t.date||'').slice(0,10)}`);
+    competitions = uniqBy(competitions, c => `${(c.name||'').trim().toLowerCase()}|${(c.date||'').slice(0,10)}`);
+    activities   = uniqBy(activities,   a => `${(a.name||'').trim().toLowerCase()}|${(a.date||'').slice(0,10)}`);
+    plans        = uniqBy(plans,        p => `${(p.name||'').trim().toLowerCase()}|${(p.date||'').slice(0,10)}`);
+
+    const calendarBody     = document.getElementById("calendar-body");
+    const monthYearDisplay = document.getElementById("month-year");
+    const tooltip          = document.getElementById("tooltip");
+
+    // Timer de fermeture pour laisser entrer la souris dans la bulle
+    let tooltipHideTimer = null;
+
+    let currentDate = new Date();
+
+    // ————— helpers d’affichage —————
+    const isMuscu = (ev) => {
+      const n = (ev.name || "").toLowerCase();
+      return ev.typeKey === "strength_training" || n.includes("muscu");
+    };
+
+    const labelText = (ev) => {
+      // priorité muscu => durée; sinon distance puis durée
+      if (isMuscu(ev) && typeof ev.durationMin === "number" && ev.durationMin > 0) return ` • ${ev.durationMin} min`;
+      if (typeof ev.distanceKm === "number" && ev.distanceKm > 0) return ` • ${ev.distanceKm.toFixed(1)} km`;
+      if (typeof ev.durationMin === "number" && ev.durationMin > 0) return ` • ${ev.durationMin} min`;
+      return "";
+    };
+
+    // URL de destination pour toute pastille (activité Garmin ou entrée manuelle/planifiée)
+    const eventHref = (ev) => {
+      if (ev.source === 'activity' && ev.id) {
+        return `/activity/${encodeURIComponent(ev.id)}`;
+      }
+      const q = new URLSearchParams({
+        type: ev.type || '',
+        name: ev.name || '',
+        date: (ev.date || '').slice(0,10)
+      });
+      return `/event?${q.toString()}`;
+    };
+
+    const setTooltipContent = (ev) => {
+      const lines = [];
+      lines.push(`${ev.type === 'activity' ? "Activité"
+                 : ev.type === 'training' ? "Entraînement"
+                 : ev.type === 'competition' ? "Compétition"
+                 : "Planifié"}: ${ev.name}`);
+      lines.push(`Date: ${ev.date}`);
+      if (isMuscu(ev)) {
+        if (typeof ev.durationMin === "number") lines.push(`Durée: ${ev.durationMin} min`);
+      } else {
+        if (typeof ev.distanceKm === "number") lines.push(`Distance: ${ev.distanceKm.toFixed(2)} km`);
+        if (typeof ev.durationMin === "number") lines.push(`Durée: ${ev.durationMin} min`);
+      }
+
+      // actions : bouton Voir (toujours), puis tagging si activité Garmin
+      let actionsHtml = `<div class="actions">
+        <a href="${eventHref(ev)}" style="text-decoration:none;"><button>Voir l’activité</button></a>`;
+      if (ev.source === "activity" && ev.id) {
+        actionsHtml += `
+          <button onclick="tag('${ev.id}','training')">Marquer entraînement</button>
+          <button onclick="tag('${ev.id}','competition')">Marquer compétition</button>
+          <button onclick="tag('${ev.id}','none')">Aucun tag</button>
+        `;
+      }
+      actionsHtml += `</div>`;
+
+      tooltip.innerHTML = `<div>${lines.join("<br>")}</div>${actionsHtml}`;
+    };
+
+    const positionTooltipNear = (anchorEl) => {
+      tooltip.style.display = "block";
+      tooltip.style.visibility = "hidden"; // mesurer sans flash
+      const rect = anchorEl.getBoundingClientRect();
+      const pad = 12;
+      let left = window.scrollX + rect.right + pad;
+      let top  = window.scrollY + rect.top;
+
+      // Ajustements limites écran
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      const vw = window.innerWidth,   vh = window.innerHeight;
+      if (left + tw > window.scrollX + vw - 8) {
+        left = window.scrollX + rect.left - tw - pad;
+        if (left < window.scrollX + 8) left = window.scrollX + 8;
+      }
+      if (top + th > window.scrollY + vh - 8) {
+        top = window.scrollY + rect.bottom - th;
+        if (top < window.scrollY + 8) top = window.scrollY + 8;
+      }
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top  = `${top}px`;
+      tooltip.style.visibility = "visible";
+    };
+
+    const showTooltipFor = (anchorEl, ev) => {
+      if (tooltipHideTimer) { clearTimeout(tooltipHideTimer); tooltipHideTimer = null; }
+      setTooltipContent(ev);
+      positionTooltipNear(anchorEl);
+    };
+
+    const scheduleHideTooltip = () => {
+      if (tooltipHideTimer) clearTimeout(tooltipHideTimer);
+      tooltipHideTimer = setTimeout(() => {
+        tooltip.style.display = "none";
+        tooltipHideTimer = null;
+      }, 200); // délai pour déplacer la souris vers la bulle
+    };
+
+    // Garder la bulle ouverte tant qu'on la survole
+    tooltip.addEventListener("mouseenter", () => {
+      if (tooltipHideTimer) { clearTimeout(tooltipHideTimer); tooltipHideTimer = null; }
+    });
+    tooltip.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+    });
+
+    // ————— rendu du calendrier —————
+    const renderCalendar = () => {
+      calendarBody.innerHTML = "";
+
+      const year  = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const firstDay = new Date(year, month, 1).getDay();
+      const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1; // Lundi=0
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      monthYearDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+
+      let row = document.createElement("tr");
+      for (let i = 0; i < adjustedFirstDay; i++) {
+        const emptyCell = document.createElement("td");
+        emptyCell.className = "empty-cell";
+        row.appendChild(emptyCell);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        if (row.children.length === 7) {
+          calendarBody.appendChild(row);
+          row = document.createElement("tr");
+        }
+
+        const dayCell = document.createElement("td");
+        dayCell.className = "day-cell";
+        dayCell.textContent = day;
+
+        const ymd = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const eventsRaw = [];
+
+        // ACTIVITÉS Garmin (tag éventuel -> vert/rouge au lieu de gris)
+        activities.forEach(a => {
+          if ((a.date || "").slice(0,10) === ymd) {
+            const t = a.label === "training" ? "training"
+                    : a.label === "competition" ? "competition"
+                    : "activity";
+            eventsRaw.push({
+              source: 'activity',
+              type: t,
+              id: a.id,
+              name: a.name,
+              date: a.date,
+              distanceKm: (typeof a.distance === "number") ? a.distance : null,
+              durationMin: (typeof a.durationMin === "number") ? a.durationMin : null,
+              typeKey: a.typeKey
+            });
+          }
+        });
+
+        // ENTRAÎNEMENTS manuels — vert
+        trainings.forEach(t => {
+          if (t.date === ymd) {
+            eventsRaw.push({
+              source: 'manual',
+              type: 'training',
+              name: t.name,
+              date: t.date,
+              distanceKm: (typeof t.distance === "number") ? t.distance : null,
+              durationMin: null,
+              typeKey: null
+            });
+          }
+        });
+
+        // COMPÉTITIONS fichier — rouge
+        competitions.forEach(c => {
+          if (c.date === ymd) {
+            eventsRaw.push({
+              source: 'manual',
+              type: 'competition',
+              name: c.name,
+              date: c.date,
+              distanceKm: (typeof c.distance === "number") ? c.distance : null,
+              durationMin: null,
+              typeKey: null
+            });
+          }
+        });
+
+        // PLANS — bleu
+        plans.forEach(p => {
+          if (p.date === ymd) {
+            eventsRaw.push({
+              source: 'plan',
+              type: 'planned',
+              name: p.name,
+              date: p.date,
+              distanceKm: (typeof p.distance === "number") ? p.distance : null,
+              durationMin: (typeof p.durationMin === "number") ? p.durationMin : null,
+              typeKey: null
+            });
+          }
+        });
+
+        // Dédoublonnage inter-sources (priorité: activity > competition > training > planned)
+        const prefer = { activity: 3, competition: 2, training: 1, planned: 0 };
+        const keyOf  = ev => `${(ev.name || '').trim().toLowerCase()}|${(ev.date || '').slice(0,10)}`;
+        const byKey  = new Map();
+        for (const ev of eventsRaw) {
+          const k = keyOf(ev);
+          const existing = byKey.get(k);
+          if (!existing || prefer[ev.type] > prefer[existing.type]) {
+            byKey.set(k, ev);
+          }
+        }
+        const events = Array.from(byKey.values());
+
+        // Affichage
+        events.forEach(ev => {
+          const div = document.createElement("div");
+          div.className =
+            ev.type === 'training'    ? "training-event" :
+            ev.type === 'competition' ? "competition-event" :
+            ev.type === 'planned'     ? "planned-event" : "activity-event";
+
+          div.textContent = `${ev.name}${labelText(ev)}`;
+
+          // Tooltip (reste ouvert si survol)
+          div.addEventListener("mouseenter", () => showTooltipFor(div, ev));
+          div.addEventListener("mouseleave", scheduleHideTooltip);
+
+          // Toujours cliquable : on enveloppe la pastille dans un <a>
+          const a = document.createElement("a");
+          a.href = eventHref(ev);
+          a.className = "badge-link clickable";
+          a.appendChild(div);
+          dayCell.appendChild(a);
+        });
+
+        row.appendChild(dayCell);
+      }
+
+      if (row.children.length > 0) {
+        calendarBody.appendChild(row);
+      }
+    };
+
+    // Listes latérales
+    const renderLists = () => {
+      const competitionList = document.getElementById("competition-list");
+      const trainingList    = document.getElementById("training-list");
+      const planList        = document.getElementById("plan-list");
+
+      competitionList.innerHTML = competitions.map(c => `
+        <li>
+          <div>
+            <strong>${c.name}</strong>
+            <p>Date: ${c.date} ${c.distance ? `| Distance: ${c.distance} km` : ""}</p>
+          </div>
+          <button class="delete-button" onclick="window.location.href='/remove_competition/${encodeURIComponent(c.name)}'">Supprimer</button>
+        </li>
+      `).join("");
+
+      trainingList.innerHTML = trainings.map(t => `
+        <li>
+          <div>
+            <strong>${t.name}</strong>
+            <p>Date: ${t.date} ${t.distance ? `| Distance: ${t.distance} km` : ""}</p>
+          </div>
+          <button class="delete-button" onclick="window.location.href='/remove_training/${encodeURIComponent(t.name)}'">Supprimer</button>
+        </li>
+      `).join("");
+
+      planList.innerHTML = plans.map((p, idx) => `
+        <li>
+          <div>
+            <strong>${p.name}</strong>
+            <p>Date: ${p.date}
+              ${p.distance ? `| Dist: ${p.distance} km` : ""}
+              ${p.durationMin ? `| Durée: ${p.durationMin} min` : ""}
+              ${p.ptype ? `| Type: ${p.ptype}` : ""}
+            </p>
+          </div>
+          <button class="delete-button" onclick="window.location.href='/remove_plan/${idx}'">Supprimer</button>
+        </li>
+      `).join("");
+    };
+
+    // API: tag d’activité
+    window.tag = async (activityId, tag) => {
+      try {
+        await fetch("/tag_activity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activityId, tag })
+        });
+        location.reload();
+      } catch (e) {
+        alert("Échec du marquage : " + e);
+      }
+    };
+
+    document.getElementById("prev-month").addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    });
+    document.getElementById("next-month").addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    });
+
+    renderCalendar();
+    renderLists();
+  });
+  </script>
 </body>
 </html>

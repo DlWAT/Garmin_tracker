@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Activité 20427953884</title>
+  <style>
+    body{background:#0c1118;color:#e5e7eb;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;}
+    header{padding:16px 20px;border-bottom:1px solid #1f2430;background:#0d1117;}
+    a{color:#93c5fd;text-decoration:none}
+    h1{font-size:22px;margin:0}
+    .container{max-width:1200px;margin:20px auto;padding:0 16px;}
+    .grid{display:flex;gap:20px;flex-wrap:wrap;}
+    .card{flex:1;min-width:320px;background:#121722;border:1px solid #1f2430;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,.4);}
+    .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2430;font-size:18px;}
+    .card .content{padding:14px;}
+    .stats ul{list-style:none;margin:0;padding:0}
+    .stats li{margin-bottom:8px;color:#cbd5e1}
+    .stats li strong{color:#fff}
+    iframe{width:100%;height:420px;border:0;border-radius:8px;overflow:hidden}
+    .graphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-top:16px}
+    .back{display:inline-block;margin-bottom:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a class="back" href="/training">← Retour calendrier</a>
+      <h1>Running</h1>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h2>Carte du parcours</h2>
+        <div class="content">
+          
+            <iframe src="/static/activity_pages/activity_20427953884_map.html"></iframe>
+          
+        </div>
+      </div>
+
+      <div class="card stats">
+        <h2>Résumé</h2>
+        <div class="content">
+          <ul>
+            <li><strong>Distance :</strong> 1.14 km</li>
+            <li><strong>Durée :</strong> 7 min</li>
+            <li><strong>Allure moy. :</strong> 6:08 min/km</li>
+            <li><strong>FC moy. :</strong> 127.0</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Graphiques</h2>
+      <div class="content">
+        <div class="graphs">
+          
+            <iframe src="/static/graphs/20427953884_hr.html"></iframe>
+          
+            <iframe src="/static/graphs/20427953884_pace.html"></iframe>
+          
+            <iframe src="/static/graphs/20427953884_run_cad.html"></iframe>
+          
+            <iframe src="/static/graphs/20427953884_elevation.html"></iframe>
+          
+            <iframe src="/static/graphs/20427953884_hr_zones.html"></iframe>
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
