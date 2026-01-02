@@ -1,51 +1,52 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>{% block title %}Garmin Tracker{% endblock %}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  {% block head %}{% endblock %}
-  <style>
-    /* mini styles si absent dans style.css */
-    .navbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:10px 12px; background:#0d0d0f; border-bottom:1px solid #222; }
-    .navbar a { color:#ddd; text-decoration:none; padding:6px 8px; border-radius:6px; }
-    .navbar a:hover { background:#1a1a1f; }
-    .navbar .grow { flex:1 1 auto; }
-    .btn-small { padding:6px 10px; border:1px solid #888; background:#111; color:#fff; border-radius:6px; cursor:pointer; text-decoration:none; }
-    .btn-small:hover { filter:brightness(1.15); }
-    .container { max-width:1200px; margin:0 auto; padding:16px; }
-    .flash { padding:10px 12px; margin:10px 0; border-radius:8px; }
-    .flash.success { background:#0e2a17; color:#c8ffd8; border:1px solid #295f3b; }
-    .flash.error { background:#2a0e0e; color:#ffd0d0; border:1px solid #5f2929; }
-    .flash.info { background:#0e1f2a; color:#cfeaff; border:1px solid #29485f; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Garmin Tracker{% endblock %}</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='common.css') }}">
+    {% block head_extra %}{% endblock %}
 </head>
 <body>
-  <div class="navbar">
-    <a href="{{ url_for('home') }}">Accueil</a>
-    <a href="{{ url_for('activity') }}">Activités</a>
-    <a href="{{ url_for('health') }}">Santé</a>
-    <a href="{{ url_for('training') }}">Entraînements</a>
-    <a href="{{ url_for('tracking') }}">Suivi</a>
-    <div class="grow"></div>
-    <!-- Bouton MAJ activités -->
-    <a class="btn-small" href="{{ url_for('update_activity') }}">↻ MAJ Activités</a>
-  </div>
+    <header class="site-header">
+        <div class="site-header__inner">
+            <div class="brand">
+                <a class="brand__link" href="{% if is_logged_in %}{{ url_for('dashboard') }}{% else %}{{ url_for('home') }}{% endif %}">Garmin Tracker</a>
+                {% if is_logged_in and user_id %}
+                    <span class="brand__meta">{{ user_id }}</span>
+                {% endif %}
+            </div>
 
-  <div class="container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+            <nav class="nav">
+                {% if is_logged_in %}
+                    <a class="nav__link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a class="nav__link {% if request.endpoint == 'community' %}active{% endif %}" href="{{ url_for('community') }}">Communauté</a>
+                    <a class="nav__link {% if request.endpoint == 'activity' %}active{% endif %}" href="{{ url_for('activity') }}">Activités</a>
+                    <a class="nav__link {% if request.endpoint == 'health' %}active{% endif %}" href="{{ url_for('health') }}">Santé</a>
+                    <a class="nav__link {% if request.endpoint == 'training' %}active{% endif %}" href="{{ url_for('training') }}">Entraînement</a>
+                    <a class="nav__link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profil</a>
+                    {% if is_admin %}
+                        <a class="nav__link {% if request.endpoint == 'admin' %}active{% endif %}" href="{{ url_for('admin') }}">Admin</a>
+                    {% endif %}
+                    <a class="nav__link" href="{{ url_for('logout') }}">Déconnexion</a>
+                {% else %}
+                    <a class="nav__link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Connexion</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
 
-    {% block content %}{% endblock %}
-  </div>
-
-  {% block scripts %}{% endblock %}
+    <main class="page">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>

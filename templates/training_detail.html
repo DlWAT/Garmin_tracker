@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Entraînement - {{ t.title }}{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
+{% endblock %}
+
+{% block content %}
+  <div class="training-header">
+    <h1 style="margin: 0;">{{ t.title }}</h1>
+  </div>
+
+  <main class="container" style="display:block;">
+    <section class="calendar-container" style="margin-bottom: 20px;">
+      <p style="margin: 0 0 10px 0; color: var(--muted-text);">
+        <b>Date</b>: {{ t.date }}
+        &nbsp;•&nbsp;
+        <b>Sport</b>: {{ sport_label }}
+        {% if t.distance_km is not none %}
+          &nbsp;•&nbsp;
+          <b>Distance</b>: {{ "%.1f"|format(t.distance_km) }} km
+        {% endif %}
+      </p>
+
+      <p style="margin: 0 0 8px 0; color: var(--text);">
+        <b>Réalisé</b>: {% if linked_activity_id or t.done %}oui{% else %}non{% endif %}
+      </p>
+
+      {% if t.notes %}
+        <p style="margin: 0 0 8px 0; color: var(--text);"><b>Remarques</b>: {{ t.notes }}</p>
+      {% endif %}
+
+      {% if t.feeling %}
+        <p style="margin: 0 0 8px 0; color: var(--text);"><b>Ressenti</b>: {{ t.feeling }}</p>
+      {% endif %}
+
+      {% if t.post_notes %}
+        <p style="margin: 0 0 8px 0; color: var(--text);"><b>Remarques après séance</b>: {{ t.post_notes }}</p>
+      {% endif %}
+
+      {% if t.description %}
+        <h2 style="margin: 10px 0;">Description</h2>
+        <p style="margin: 0; color: var(--text);">{{ t.description }}</p>
+      {% endif %}
+
+      {% if t.content %}
+        <h2 style="margin: 20px 0 10px 0;">Contenu</h2>
+        <pre style="white-space: pre-wrap; margin: 0; background: var(--muted-card); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: var(--text);">{{ t.content }}</pre>
+      {% endif %}
+
+      {% if linked_activity_id %}
+        <h2 style="margin: 20px 0 10px 0;">Activité associée</h2>
+        <p style="margin: 0; color: var(--text);">
+          <a href="{{ url_for('activity_detail', activity_id=linked_activity_id) }}">Ouvrir l'activité</a>
+          {% if linked_activity_name %}
+            <span class="muted">• {{ linked_activity_name }}</span>
+          {% endif %}
+        </p>
+      {% endif %}
+
+      <h2 style="margin: 20px 0 10px 0;">Retour de séance</h2>
+      <form method="post" action="{{ url_for('training_feedback', training_id=t.id) }}">
+        <div class="field">
+          <label style="display:flex; align-items:center; gap: 10px;">
+            <input type="checkbox" name="done" {% if linked_activity_id or t.done %}checked{% endif %} />
+            <span>Réalisé</span>
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="feeling">Ressenti</label>
+          <input id="feeling" name="feeling" type="text" value="{{ t.feeling or '' }}" placeholder="Ex: jambes lourdes, facile, dur…" />
+        </div>
+
+        <div class="field">
+          <label for="post_notes">Remarques après séance</label>
+          <textarea id="post_notes" name="post_notes" rows="3" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); resize: vertical;">{{ t.post_notes or '' }}</textarea>
+        </div>
+
+        <button class="btn btn--pink" type="submit">Enregistrer</button>
+      </form>
+
+      <div style="margin-top: 20px;">
+        <a class="nav__link" href="{{ url_for('training') }}">← Retour au calendrier</a>
+      </div>
+    </section>
+  </main>
+{% endblock %}

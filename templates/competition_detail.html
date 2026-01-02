@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Compétition - {{ c.name }}{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
+{% endblock %}
+
+{% block content %}
+  <div class="training-header">
+    <h1 style="margin: 0;">{{ c.name }}</h1>
+  </div>
+
+  <main class="container" style="display:block;">
+    <section class="calendar-container" style="margin-bottom: 20px;">
+      <p style="margin: 0 0 10px 0; color: var(--muted-text);">
+        <b>Date</b>: {{ c.date }}
+        &nbsp;•&nbsp;
+        <b>Sport</b>: {{ sport_label }}
+        {% if c.location %}
+          &nbsp;•&nbsp;
+          <b>Lieu</b>: {{ c.location }}
+        {% endif %}
+        {% if c.distance is not none %}
+          &nbsp;•&nbsp;
+          <b>Distance</b>: {{ c.distance }} km
+        {% endif %}
+      </p>
+
+      <div style="margin-top: 20px;">
+        <a class="nav__link" href="{{ url_for('training') }}">← Retour au calendrier</a>
+      </div>
+    </section>
+
+    {% if matched_activities %}
+      <section class="calendar-container" style="margin-bottom: 20px;">
+        <h2 style="margin-top: 0;">Activités Garmin associées</h2>
+        <div class="muted">Même jour et même sport.</div>
+        <div style="height: 10px;"></div>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          {% for a in matched_activities %}
+            <li style="background: var(--muted-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+              {% if a.activity_id %}
+                <a href="{{ url_for('activity_detail', activity_id=a.activity_id) }}" style="text-decoration: none; color: var(--text); font-weight: 800;">
+                  {{ a.name }}
+                </a>
+              {% else %}
+                <strong style="color: var(--text);">{{ a.name }}</strong>
+              {% endif %}
+              <div class="muted" style="margin-top: 4px;">
+                {% if a.distance_m is not none %}
+                  {{ "%.1f"|format((a.distance_m|float) / 1000) }} km
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+  </main>
+{% endblock %}

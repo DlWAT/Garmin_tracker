@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="card">
+    <h1 style="margin-top:0;">Admin</h1>
+    <div class="muted">Gestion des comptes: réinitialiser PIN, supprimer données, supprimer compte.</div>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="card" aria-label="Comptes">
+    <h2 style="margin-top:0;">Comptes</h2>
+
+    {% if not users %}
+      <div class="muted">Aucun compte.</div>
+    {% else %}
+      <div style="display:grid; gap: 12px;">
+        {% for u in users %}
+          <div class="card card--muted" style="margin:0;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+              <div>
+                <div style="font-weight: 900;">{{ u.display_name }} <span class="muted">({{ u.user_id }})</span></div>
+                <div class="muted">{{ u.email }}</div>
+                {% if u.created_at %}
+                  <div class="muted">Créé: {{ u.created_at }}</div>
+                {% endif %}
+              </div>
+              <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <a class="btn" href="{{ url_for('dashboard', user=u.user_id) }}">Dashboard</a>
+              </div>
+            </div>
+
+            <div style="height: 12px;"></div>
+
+            <div style="display:grid; gap: 10px;">
+              <form method="post" action="{{ url_for('admin_reset_pin') }}" style="display:flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+                <input type="hidden" name="user_id" value="{{ u.user_id }}" />
+                <div class="field" style="margin:0; min-width: 220px;">
+                  <label>Nouveau PIN (optionnel)</label>
+                  <input type="text" name="pin" inputmode="numeric" placeholder="(vide = générer un PIN)" />
+                </div>
+                <button class="btn" type="submit">Réinitialiser PIN</button>
+              </form>
+
+              <form method="post" action="{{ url_for('admin_delete_data') }}" onsubmit="return confirm('Supprimer toutes les données JSON/statics pour {{ u.user_id|e }} ?');" style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <input type="hidden" name="user_id" value="{{ u.user_id }}" />
+                <button class="btn" type="submit">Supprimer données</button>
+              </form>
+
+              <form method="post" action="{{ url_for('admin_delete_account') }}" onsubmit="return confirm('SUPPRIMER LE COMPTE {{ u.user_id|e }} ? Action irréversible.');" style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <input type="hidden" name="user_id" value="{{ u.user_id }}" />
+                <button class="btn btn--pink" type="submit">Supprimer compte</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

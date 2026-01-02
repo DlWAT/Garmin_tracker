@@ -1,457 +1,599 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <title>Calendrier interactif</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% extends "base.html" %}
+
+{% block title %}Entraînement - Garmin Tracker{% endblock %}
+
+{% block head_extra %}
   <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
-  <style>
-    /* Pastilles */
-    .activity-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#2b2f36; color:#eee; border-radius:8px; font-size:13px; }
-    .training-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#2ecc71; color:#fff; border-radius:8px; font-size:13px; }
-    .competition-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#e74c3c; color:#fff; border-radius:8px; font-size:13px; }
-    .planned-event{ display:inline-block; margin:4px 0; padding:6px 10px; background:#3b82f6; color:#fff; border-radius:8px; font-size:13px; }
-    .clickable{ cursor:pointer; }
-    .badge-link{ text-decoration:none; display:inline-block; }
+{% endblock %}
 
-    /* Layout similaire à ta version d'origine */
-    body{background:#101318; color:#e5e7eb; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
-    header{padding:16px 20px; border-bottom:1px solid #1f2430; background:#0d1117;}
-    header h1{margin:6px 0 0 0; font-size:22px; font-weight:600;}
-    nav a{color:#cbd5e1; text-decoration:none; margin-right:12px; padding:6px 8px; border-radius:6px;}
-    nav a:hover{background:#1a2230;}
-    .wrapper{max-width:1200px; margin:18px auto; padding:0 16px;}
-    .calendar-navigation{display:flex; align-items:center; gap:10px; margin:10px 0;}
-    .calendar-navigation button{background:#1f2937; color:#e5e7eb; border:1px solid #334155; padding:6px 10px; border-radius:6px; cursor:pointer;}
-    .calendar-table{width:100%; border-collapse:collapse; margin-top:8px;}
-    .calendar-table th,.calendar-table td{border:1px solid #1f2430; width:14.285%; vertical-align:top; height:110px; padding:8px; position:relative;}
-    .day-cell{background:#151923;}
-    .empty-cell{background:#0f1320;}
-
-    .lists{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-top:22px;}
-    .list{background:#121722; border:1px solid #1f2430; padding:14px; border-radius:10px;}
-    .list h2{margin:0 0 10px 0; font-size:18px;}
-    .list form{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
-    .list input,.list select,.list button{padding:8px 10px; border-radius:6px; border:1px solid #334155; background:#0e1420; color:#e5e7eb;}
-    .list button{background:#1f2937; cursor:pointer;}
-    .list ul{list-style:none; padding:0; margin:0;}
-    .list li{display:flex; align-items:center; justify-content:space-between; border-top:1px dashed #232939; padding:8px 0;}
-    .delete-button{background:#262b36; color:#e5e7eb; border:1px solid #3a4154; padding:6px 10px; border-radius:6px; cursor:pointer;}
-
-    .tooltip{
-      position:absolute; display:none; background:#0f172a; color:#e5e7eb;
-      border:1px solid #334155; padding:8px 10px; border-radius:8px;
-      white-space:pre-wrap; z-index:50; max-width:280px;
-    }
-    .tooltip .actions{margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;}
-    .tooltip .actions button{padding:4px 8px; border:1px solid #3a4154; background:#1f2937; color:#e5e7eb; border-radius:6px; cursor:pointer; font-size:12px;}
-  </style>
-</head>
-<body>
-  <header>
-    <nav>
-      <a href="/">Accueil</a>
-      <a href="/activity">Activités</a>
-      <a href="/health">Santé</a>
-      <a href="/training" class="active">Calendrier</a>
-    </nav>
-    <h1>Calendrier interactif</h1>
-  </header>
-
-  <div class="wrapper">
-    <section>
-      <div class="calendar-navigation">
-        <button id="prev-month">◀</button>
-        <span id="month-year"></span>
-        <button id="next-month">▶</button>
-      </div>
-
-      <table class="calendar-table">
-        <thead>
-          <tr>
-            <th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th>
-          </tr>
-        </thead>
-        <tbody id="calendar-body"></tbody>
-      </table>
-    </section>
-
-    <section class="lists">
-      <div class="list">
-        <h2>Ajouter une compétition</h2>
-        <form action="{{ url_for('add_competition') }}" method="post">
-          <input type="text"   name="name"     placeholder="Nom de la compétition" required>
-          <input type="date"   name="date"     required>
-          <input type="text"   name="location" placeholder="Lieu">
-          <button type="submit">Ajouter</button>
-        </form>
-        <ul id="competition-list"></ul>
-      </div>
-
-      <div class="list">
-        <h2>Ajouter un entraînement</h2>
-        <form action="{{ url_for('add_training') }}" method="post">
-          <input type="text" name="name" placeholder="Nom de l'entraînement" required>
-          <input type="date" name="date" required>
-          <button type="submit">Ajouter</button>
-        </form>
-        <ul id="training-list"></ul>
-      </div>
-
-      <div class="list">
-        <h2>Ajouter une séance planifiée (bleu)</h2>
-        <form action="{{ url_for('add_plan') }}" method="post">
-          <input type="text"   name="name" placeholder="Nom de la séance" required>
-          <input type="date"   name="date" required>
-          <select name="ptype" title="type">
-            <option value="">Type (optionnel)</option>
-            <option value="training">Entraînement</option>
-            <option value="competition">Compétition</option>
-          </select>
-          <input type="number" step="0.1" name="distance" placeholder="Distance (km)">
-          <input type="number" name="duration" placeholder="Durée (min)">
-          <button type="submit">Planifier</button>
-        </form>
-        <ul id="plan-list"></ul>
-      </div>
-    </section>
-
-    <div id="tooltip" class="tooltip"></div>
+{% block content %}
+  <div class="training-header">
+        <h1 style="margin: 0;">Entraînement</h1>
   </div>
 
+    <main class="container container--stack">
+            <div class="training-tabs" role="tablist" aria-label="Navigation entraînement">
+                    <button id="tab-calendar" class="training-tab is-active" type="button" role="tab" aria-selected="true">Calendrier</button>
+                    <button id="tab-planner" class="training-tab" type="button" role="tab" aria-selected="false">Planificateur de séance</button>
+            </div>
+
+            <section class="calendar-container" id="panel-calendar" role="tabpanel" aria-label="Calendrier">
+          <div class="calendar-navigation">
+              <button id="prev-month">◀</button>
+              <span id="month-year"></span>
+              <button id="next-month">▶</button>
+          </div>
+          <table class="calendar-table">
+              <thead>
+                  <tr>
+                      <th>Lun</th>
+                      <th>Mar</th>
+                      <th>Mer</th>
+                      <th>Jeu</th>
+                      <th>Ven</th>
+                      <th>Sam</th>
+                      <th>Dim</th>
+                  </tr>
+              </thead>
+              <tbody id="calendar-body"></tbody>
+          </table>
+      </section>
+
+      <section class="planner" id="panel-planner" role="tabpanel" aria-label="Planificateur" hidden>
+          <div class="planner-grid">
+              <div class="planner-card">
+                  <h2>Entraînement</h2>
+                  <form id="training-form" class="planner-form" onsubmit="return false;">
+                      <div class="planner-form__grid">
+                          <div class="field" style="margin:0; grid-column: 1 / -1;">
+                              <label for="training-preset">Séance type</label>
+                              <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                  <select id="training-preset" style="flex: 1; min-width: 220px;">
+                                      <option value="">— Choisir un modèle —</option>
+                                      <option value="recup">Récup</option>
+                                      <option value="ef">EF</option>
+                                      <option value="tempo">Tempo</option>
+                                      <option value="frac_short">Fractionné court</option>
+                                      <option value="frac_long">Fractionné long</option>
+                                  </select>
+                                  <button class="btn" type="button" id="apply-preset">Appliquer</button>
+                              </div>
+                              <div class="muted">Pré-remplit les champs (modifiable ensuite).</div>
+                          </div>
+                          <div class="field" style="margin:0;">
+                              <label for="training-title">Titre</label>
+                              <input type="text" id="training-title" placeholder="Ex: Fractionné 10x400" required>
+                          </div>
+                          <div class="field" style="margin:0;">
+                              <label for="training-date">Date</label>
+                              <input type="date" id="training-date" required>
+                          </div>
+                          <div class="field" style="margin:0;">
+                              <label for="training-sport">Sport</label>
+                              <select id="training-sport" required>
+                                  <option value="running" selected>Course à pied</option>
+                                  <option value="cycling">Vélo</option>
+                                  <option value="swimming">Natation</option>
+                                  <option value="strength_training">Musculation</option>
+                                  <option value="other">Autre</option>
+                              </select>
+                          </div>
+                          <div class="field" style="margin:0;">
+                              <label for="training-distance">Distance (km)</label>
+                              <input type="number" id="training-distance" placeholder="Optionnel" step="0.1">
+                          </div>
+                          <div class="field" style="margin:0; grid-column: 1 / -1;">
+                              <label for="training-description">Description courte</label>
+                              <input type="text" id="training-description" placeholder="Optionnel">
+                          </div>
+                          <div class="field" style="margin:0; grid-column: 1 / -1;">
+                              <label for="training-content">Contenu</label>
+                              <textarea id="training-content" class="planner-textarea planner-textarea--content" rows="6" placeholder="Optionnel
+
+Exemple course :
+- 20' EF
+- 10x400m (r=1')
+- 10' retour au calme"></textarea>
+                          </div>
+                          <div class="field" style="margin:0; grid-column: 1 / -1;">
+                              <label for="training-notes">Remarques</label>
+                              <textarea id="training-notes" class="planner-textarea" rows="3" placeholder="Optionnel"></textarea>
+                          </div>
+                      </div>
+                      <div class="planner-actions">
+                          <button class="btn" type="button" id="add-training">Ajouter</button>
+                      </div>
+                  </form>
+              </div>
+
+              <div class="planner-card">
+                  <h2>Compétition</h2>
+                  <form id="competition-form" class="planner-form" onsubmit="return false;">
+                      <div class="planner-form__grid">
+                          <div class="field" style="margin:0;">
+                              <label for="competition-name">Nom</label>
+                              <input type="text" id="competition-name" placeholder="Ex: Semi-marathon" required>
+                          </div>
+                          <div class="field" style="margin:0;">
+                              <label for="competition-date">Date</label>
+                              <input type="date" id="competition-date" required>
+                          </div>
+                          <div class="field" style="margin:0;">
+                              <label for="competition-sport">Sport</label>
+                              <select id="competition-sport" required>
+                                  <option value="running" selected>Course à pied</option>
+                                  <option value="cycling">Vélo</option>
+                                  <option value="swimming">Natation</option>
+                                  <option value="strength_training">Musculation</option>
+                                  <option value="other">Autre</option>
+                              </select>
+                          </div>
+                          <div class="field" style="margin:0;">
+                              <label for="competition-distance">Distance (km)</label>
+                              <input type="number" id="competition-distance" placeholder="Optionnel" step="0.1">
+                          </div>
+                      </div>
+                      <div class="planner-actions">
+                          <button class="btn btn--pink" type="button" id="add-competition">Ajouter</button>
+                      </div>
+                  </form>
+              </div>
+
+              <div class="planner-card">
+                  <h2>Prochains entraînements</h2>
+                  <ul id="training-list"></ul>
+                  <div class="muted" id="training-list-meta" style="margin-top: 6px;"></div>
+              </div>
+
+              <div class="planner-card">
+                  <h2>Prochaines compétitions</h2>
+                  <ul id="competition-list"></ul>
+                  <div class="muted" id="competition-list-meta" style="margin-top: 6px;"></div>
+              </div>
+          </div>
+      </section>
+      <div id="tooltip" class="tooltip"></div>
+  </main>
+
   <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // Données injectées par Flask
-    let trainings    = {{ trainings|tojson }};
-    let competitions = {{ competitions|tojson }};
-    let activities   = {{ activities|tojson }};    // {id,name,date,distance,durationMin,typeKey,label}
-    let plans        = {{ plans|tojson }};         // {name,date,ptype,distance,durationMin}
+        document.addEventListener("DOMContentLoaded", () => {
+            let trainings = {{ trainings|tojson }};
+            let competitions = {{ competitions|tojson }};
 
-    // Dédup simple par source
-    const uniqBy = (arr, keyFn) => [...new Map(arr.map(x => [keyFn(x), x])).values()];
-    trainings    = uniqBy(trainings,    t => `${(t.name||'').trim().toLowerCase()}|${(t.date||'').slice(0,10)}`);
-    competitions = uniqBy(competitions, c => `${(c.name||'').trim().toLowerCase()}|${(c.date||'').slice(0,10)}`);
-    activities   = uniqBy(activities,   a => `${(a.name||'').trim().toLowerCase()}|${(a.date||'').slice(0,10)}`);
-    plans        = uniqBy(plans,        p => `${(p.name||'').trim().toLowerCase()}|${(p.date||'').slice(0,10)}`);
+            let monthTrainings = [];
+            let monthCompetitions = [];
+            let monthActivities = [];
+            let eventsByDate = new Map();
 
-    const calendarBody     = document.getElementById("calendar-body");
-    const monthYearDisplay = document.getElementById("month-year");
-    const tooltip          = document.getElementById("tooltip");
+            const calendarEventsUrl = "{{ url_for('api_calendar_events') }}";
+            const activityAsTrainingUrl = "{{ url_for('api_activity_as_training') }}";
+            const calendarBody = document.getElementById("calendar-body");
+            const monthYearDisplay = document.getElementById("month-year");
+            const tooltip = document.getElementById("tooltip");
 
-    // Timer de fermeture pour laisser entrer la souris dans la bulle
-    let tooltipHideTimer = null;
+            const tabCalendar = document.getElementById('tab-calendar');
+            const tabPlanner = document.getElementById('tab-planner');
+            const panelCalendar = document.getElementById('panel-calendar');
+            const panelPlanner = document.getElementById('panel-planner');
 
-    let currentDate = new Date();
+            const trainingDetailBaseUrl = "{{ url_for('training_detail', training_id='__ID__') }}";
+            const competitionDetailBaseUrl = "{{ url_for('competition_detail', competition_id='__ID__') }}";
+            const activityDetailBaseUrl = "{{ url_for('activity_detail', activity_id=0) }}";
 
-    // ————— helpers d’affichage —————
-    const isMuscu = (ev) => {
-      const n = (ev.name || "").toLowerCase();
-      return ev.typeKey === "strength_training" || n.includes("muscu");
-    };
+            const setActiveTab = (tab) => {
+                const isCalendar = tab === 'calendar';
+                tabCalendar.classList.toggle('is-active', isCalendar);
+                tabPlanner.classList.toggle('is-active', !isCalendar);
+                tabCalendar.setAttribute('aria-selected', isCalendar ? 'true' : 'false');
+                tabPlanner.setAttribute('aria-selected', !isCalendar ? 'true' : 'false');
+                panelCalendar.hidden = !isCalendar;
+                panelPlanner.hidden = isCalendar;
+            };
 
-    const labelText = (ev) => {
-      // priorité muscu => durée; sinon distance puis durée
-      if (isMuscu(ev) && typeof ev.durationMin === "number" && ev.durationMin > 0) return ` • ${ev.durationMin} min`;
-      if (typeof ev.distanceKm === "number" && ev.distanceKm > 0) return ` • ${ev.distanceKm.toFixed(1)} km`;
-      if (typeof ev.durationMin === "number" && ev.durationMin > 0) return ` • ${ev.durationMin} min`;
-      return "";
-    };
+            tabCalendar.addEventListener('click', () => setActiveTab('calendar'));
+            tabPlanner.addEventListener('click', () => setActiveTab('planner'));
 
-    // URL de destination pour toute pastille (activité Garmin ou entrée manuelle/planifiée)
-    const eventHref = (ev) => {
-      if (ev.source === 'activity' && ev.id) {
-        return `/activity/${encodeURIComponent(ev.id)}`;
-      }
-      const q = new URLSearchParams({
-        type: ev.type || '',
-        name: ev.name || '',
-        date: (ev.date || '').slice(0,10)
-      });
-      return `/event?${q.toString()}`;
-    };
+            const activityUrl = (activityId) => {
+                const id = Number(activityId);
+                if (!Number.isFinite(id)) return null;
+                return activityDetailBaseUrl.replace(/\/0$/, `/${encodeURIComponent(String(id))}`);
+            };
 
-    const setTooltipContent = (ev) => {
-      const lines = [];
-      lines.push(`${ev.type === 'activity' ? "Activité"
-                 : ev.type === 'training' ? "Entraînement"
-                 : ev.type === 'competition' ? "Compétition"
-                 : "Planifié"}: ${ev.name}`);
-      lines.push(`Date: ${ev.date}`);
-      if (isMuscu(ev)) {
-        if (typeof ev.durationMin === "number") lines.push(`Durée: ${ev.durationMin} min`);
-      } else {
-        if (typeof ev.distanceKm === "number") lines.push(`Distance: ${ev.distanceKm.toFixed(2)} km`);
-        if (typeof ev.durationMin === "number") lines.push(`Durée: ${ev.durationMin} min`);
-      }
+            let currentDate = new Date();
 
-      // actions : bouton Voir (toujours), puis tagging si activité Garmin
-      let actionsHtml = `<div class="actions">
-        <a href="${eventHref(ev)}" style="text-decoration:none;"><button>Voir l’activité</button></a>`;
-      if (ev.source === "activity" && ev.id) {
-        actionsHtml += `
-          <button onclick="tag('${ev.id}','training')">Marquer entraînement</button>
-          <button onclick="tag('${ev.id}','competition')">Marquer compétition</button>
-          <button onclick="tag('${ev.id}','none')">Aucun tag</button>
-        `;
-      }
-      actionsHtml += `</div>`;
+            const indexMonthEvents = () => {
+                eventsByDate = new Map();
+                const add = (ev) => {
+                    if (!ev || !ev.date) return;
+                    const key = String(ev.date);
+                    if (!eventsByDate.has(key)) eventsByDate.set(key, []);
+                    eventsByDate.get(key).push(ev);
+                };
+                monthActivities.forEach((a) => add({ type: 'activity', ...a }));
+                monthTrainings.forEach((t) => add({ type: 'training', ...t }));
+                monthCompetitions.forEach((c) => add({ type: 'competition', ...c }));
+            };
 
-      tooltip.innerHTML = `<div>${lines.join("<br>")}</div>${actionsHtml}`;
-    };
+            const loadMonthEvents = async () => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth() + 1;
+                const url = `${calendarEventsUrl}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) throw new Error(`calendar_events ${res.status}`);
+                const data = await res.json();
+                monthTrainings = Array.isArray(data.trainings) ? data.trainings : [];
+                monthCompetitions = Array.isArray(data.competitions) ? data.competitions : [];
+                monthActivities = Array.isArray(data.activities) ? data.activities : [];
+                indexMonthEvents();
+            };
 
-    const positionTooltipNear = (anchorEl) => {
-      tooltip.style.display = "block";
-      tooltip.style.visibility = "hidden"; // mesurer sans flash
-      const rect = anchorEl.getBoundingClientRect();
-      const pad = 12;
-      let left = window.scrollX + rect.right + pad;
-      let top  = window.scrollY + rect.top;
+            const formatDistance = (type, data) => {
+                let d;
+                if (type === 'training') d = data.distance_km;
+                else d = data.distance;
+                if (d === undefined || d === null || d === '') return 'N/A';
+                const n = Number(d);
+                if (!Number.isFinite(n)) return 'N/A';
+                const km = (type === 'activity' && n > 100) ? (n / 1000) : n;
+                return `${km.toFixed(2)} km`;
+            };
 
-      // Ajustements limites écran
-      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
-      const vw = window.innerWidth,   vh = window.innerHeight;
-      if (left + tw > window.scrollX + vw - 8) {
-        left = window.scrollX + rect.left - tw - pad;
-        if (left < window.scrollX + 8) left = window.scrollX + 8;
-      }
-      if (top + th > window.scrollY + vh - 8) {
-        top = window.scrollY + rect.bottom - th;
-        if (top < window.scrollY + 8) top = window.scrollY + 8;
-      }
+            const sportLabel = (sport) => {
+                return {
+                    running: 'Course à pied',
+                    cycling: 'Vélo',
+                    swimming: 'Natation',
+                    strength_training: 'Musculation',
+                    other: 'Autre'
+                }[sport] || 'Autre';
+            };
 
-      tooltip.style.left = `${left}px`;
-      tooltip.style.top  = `${top}px`;
-      tooltip.style.visibility = "visible";
-    };
+            const workoutPresets = {
+                recup: {
+                    title: 'Récup',
+                    sport: 'running',
+                    description: 'Footing très facile',
+                    content: "- 30' à 45' très facile\n- Relâché, cadence naturelle\n- Objectif: récupérer"
+                },
+                ef: {
+                    title: 'EF',
+                    sport: 'running',
+                    description: 'Endurance fondamentale',
+                    content: "- 45' à 1h15 en aisance respiratoire\n- Option: 6x20'' lignes droites (r=40'')"
+                },
+                tempo: {
+                    title: 'Tempo',
+                    sport: 'running',
+                    description: 'Allure soutenue mais contrôlée',
+                    content: "- 20' EF\n- 2x10' tempo (r=3')\n- 10' retour au calme"
+                },
+                frac_short: {
+                    title: 'Fractionné court',
+                    sport: 'running',
+                    description: 'Vitesse / VO2',
+                    content: "- 20' EF\n- 10x400m (r=1')\n- 10' retour au calme"
+                },
+                frac_long: {
+                    title: 'Fractionné long',
+                    sport: 'running',
+                    description: 'Seuil / allure spécifique',
+                    content: "- 20' EF\n- 5x1000m (r=2')\n- 10' retour au calme"
+                }
+            };
 
-    const showTooltipFor = (anchorEl, ev) => {
-      if (tooltipHideTimer) { clearTimeout(tooltipHideTimer); tooltipHideTimer = null; }
-      setTooltipContent(ev);
-      positionTooltipNear(anchorEl);
-    };
+            const applyPreset = () => {
+                const key = document.getElementById('training-preset').value;
+                if (!key || !workoutPresets[key]) return;
+                const p = workoutPresets[key];
+                if (p.title) document.getElementById('training-title').value = p.title;
+                if (p.sport) document.getElementById('training-sport').value = p.sport;
+                if (p.description !== undefined) document.getElementById('training-description').value = p.description;
+                if (p.content !== undefined) document.getElementById('training-content').value = p.content;
+                document.getElementById('training-title').focus();
+            };
 
-    const scheduleHideTooltip = () => {
-      if (tooltipHideTimer) clearTimeout(tooltipHideTimer);
-      tooltipHideTimer = setTimeout(() => {
-        tooltip.style.display = "none";
-        tooltipHideTimer = null;
-      }, 200); // délai pour déplacer la souris vers la bulle
-    };
+            const renderCalendar = () => {
+                calendarBody.innerHTML = ""; // Réinitialise le contenu du calendrier
 
-    // Garder la bulle ouverte tant qu'on la survole
-    tooltip.addEventListener("mouseenter", () => {
-      if (tooltipHideTimer) { clearTimeout(tooltipHideTimer); tooltipHideTimer = null; }
-    });
-    tooltip.addEventListener("mouseleave", () => {
-      tooltip.style.display = "none";
-    });
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const firstDay = new Date(year, month, 1).getDay();
+                const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1; // Débute lundi
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // ————— rendu du calendrier —————
-    const renderCalendar = () => {
-      calendarBody.innerHTML = "";
+                monthYearDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
 
-      const year  = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const firstDay = new Date(year, month, 1).getDay();
-      const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1; // Lundi=0
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+                let row = document.createElement("tr");
 
-      monthYearDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+                // Ajouter des cases vides avant le premier jour
+                for (let i = 0; i < adjustedFirstDay; i++) {
+                    const emptyCell = document.createElement("td");
+                    emptyCell.className = "empty-cell";
+                    row.appendChild(emptyCell);
+                }
 
-      let row = document.createElement("tr");
-      for (let i = 0; i < adjustedFirstDay; i++) {
-        const emptyCell = document.createElement("td");
-        emptyCell.className = "empty-cell";
-        row.appendChild(emptyCell);
-      }
+                // Ajouter les cellules pour chaque jour
+                for (let day = 1; day <= daysInMonth; day++) {
+                    if (row.children.length === 7) {
+                        calendarBody.appendChild(row);
+                        row = document.createElement("tr");
+                    }
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        if (row.children.length === 7) {
-          calendarBody.appendChild(row);
-          row = document.createElement("tr");
-        }
+                    const dayCell = document.createElement("td");
+                    dayCell.className = "day-cell";
+                    const dayNumber = document.createElement('div');
+                    dayNumber.className = 'day-number';
+                    dayNumber.textContent = day;
+                    dayCell.appendChild(dayNumber);
 
-        const dayCell = document.createElement("td");
-        dayCell.className = "day-cell";
-        dayCell.textContent = day;
+                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const events = eventsByDate.get(dateKey) || [];
 
-        const ymd = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        const eventsRaw = [];
+                    // Afficher les événements dans les cellules
+                    events.forEach(event => {
+                        const eventDiv = document.createElement("div");
+                        eventDiv.className =
+                            event.type === 'activity'
+                                ? "activity-event"
+                                : event.type === 'training'
+                                ? "training-event"
+                                : "competition-event";
+                        if (event.type === 'training') {
+                            const done = !!event.linked_activity_id || !!event.done;
+                            eventDiv.textContent = (event.title || 'Entraînement') + (done ? ' ✓' : '');
+                        } else {
+                            eventDiv.textContent = event.name;
+                        }
+                        eventDiv.addEventListener("mouseenter", (e) => showTooltip(e, event));
+                        eventDiv.addEventListener("mouseleave", hideTooltip);
+                        if (event.type === 'training' && event.id) {
+                            eventDiv.classList.add('clickable');
+                            if (event.linked_activity_id) {
+                                eventDiv.title = "Ouvrir l'activité associée";
+                                eventDiv.addEventListener('click', () => {
+                                    const url = activityUrl(event.linked_activity_id);
+                                    if (url) window.location.href = url;
+                                });
+                            } else {
+                                eventDiv.title = 'Ouvrir la fiche entraînement';
+                                eventDiv.addEventListener('click', () => {
+                                    window.location.href = trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(event.id));
+                                });
+                            }
+                        }
+                        if (event.type === 'competition' && event.id) {
+                            eventDiv.classList.add('clickable');
+                            eventDiv.title = 'Ouvrir la fiche compétition';
+                            eventDiv.addEventListener('click', () => {
+                                window.location.href = competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(event.id));
+                            });
+                        }
+                        if (event.type === 'activity' && event.activity_id) {
+                            eventDiv.classList.add('clickable');
+                            eventDiv.title = "Ouvrir la fiche activité";
+                            eventDiv.addEventListener('click', () => {
+                                const url = activityUrl(event.activity_id);
+                                if (url) window.location.href = url;
+                            });
+                        }
+                        dayCell.appendChild(eventDiv);
+                    });
 
-        // ACTIVITÉS Garmin (tag éventuel -> vert/rouge au lieu de gris)
-        activities.forEach(a => {
-          if ((a.date || "").slice(0,10) === ymd) {
-            const t = a.label === "training" ? "training"
-                    : a.label === "competition" ? "competition"
-                    : "activity";
-            eventsRaw.push({
-              source: 'activity',
-              type: t,
-              id: a.id,
-              name: a.name,
-              date: a.date,
-              distanceKm: (typeof a.distance === "number") ? a.distance : null,
-              durationMin: (typeof a.durationMin === "number") ? a.durationMin : null,
-              typeKey: a.typeKey
+                    row.appendChild(dayCell);
+                }
+
+                // Ajouter la dernière ligne si elle contient des éléments
+                if (row.children.length > 0) {
+                    calendarBody.appendChild(row);
+                }
+            };
+
+            const showTooltip = (event, data) => {
+                tooltip.style.display = "block";
+                tooltip.style.top = `${event.pageY + 10}px`;
+                tooltip.style.left = `${event.pageX + 10}px`;
+                const title = data.type === 'training' ? (data.title || 'Entraînement') : data.name;
+                const lines = [
+                    `${data.type === 'activity' ? 'Activité' : data.type === 'training' ? 'Entraînement' : 'Compétition'}: ${title}`,
+                    `Date: ${data.date}`,
+                    `Sport: ${sportLabel(data.sport || 'other')}`,
+                    `Distance: ${formatDistance(data.type, data)}`
+                ];
+                if (data.type === 'training') {
+                    const done = !!data.linked_activity_id || !!data.done;
+                    lines.push(`Réalisé: ${done ? 'oui' : 'non'}`);
+                    if (data.linked_activity_id) {
+                        const an = data.linked_activity_name || `#${data.linked_activity_id}`;
+                        lines.push(`Activité associée: ${an}`);
+                    }
+                }
+                if (data.type === 'activity') {
+                    lines.push(`Lieu: ${data.locationName || 'Lieu inconnu'}`);
+                }
+                if (data.description) {
+                    lines.push(`Description: ${data.description}`);
+                }
+                if (data.type === 'training' && data.content) {
+                    lines.push(`\nContenu:\n${data.content}`);
+                }
+                if (data.type === 'training' && data.feeling) {
+                    lines.push(`Ressenti: ${data.feeling}`);
+                }
+                if (data.type === 'training' && data.post_notes) {
+                    lines.push(`Remarques après séance: ${data.post_notes}`);
+                }
+                if (data.type === 'training' && data.notes) {
+                    lines.push(`Remarques: ${data.notes}`);
+                }
+                tooltip.textContent = lines.join('\n');
+            };
+
+            const hideTooltip = () => {
+                tooltip.style.display = "none";
+            };
+
+            const addEvent = (type) => {
+                const date = document.getElementById(`${type}-date`).value;
+                const distance = document.getElementById(`${type}-distance`).value;
+                const sport = document.getElementById(`${type}-sport`).value;
+
+                const name = type === 'training'
+                    ? document.getElementById('training-title').value
+                    : document.getElementById(`${type}-name`).value;
+
+                const description = type === 'training'
+                    ? document.getElementById('training-description').value
+                    : '';
+                const content = type === 'training'
+                    ? document.getElementById('training-content').value
+                    : '';
+                const notes = type === 'training'
+                    ? document.getElementById('training-notes').value
+                    : '';
+
+                if (!name || !date) {
+                    alert("Veuillez remplir tous les champs.");
+                    return;
+                }
+
+                const form = new FormData();
+                form.append('name', name);
+                if (type === 'training') form.append('title', name);
+                form.append('date', date);
+                form.append('sport', sport);
+                if (distance) form.append('distance', distance);
+                if (type === 'training') {
+                    if (description) form.append('description', description);
+                    if (content) form.append('content', content);
+                    if (notes) form.append('notes', notes);
+                }
+                if (type === 'competition') form.append('location', '');
+
+                fetch(type === 'training' ? '/mytrainer/add_training' : '/mytrainer/add_competition', {
+                    method: 'POST',
+                    body: form
+                }).then(() => window.location.reload());
+            };
+
+            window.deleteCompetition = (name) => {
+                window.location.href = `/mytrainer/remove_competition/${encodeURIComponent(name)}`;
+            };
+
+            window.deleteTraining = (name) => {
+                window.location.href = `/mytrainer/remove_training/${encodeURIComponent(name)}`;
+            };
+
+            const renderList = () => {
+                const competitionList = document.getElementById("competition-list");
+                const trainingList = document.getElementById("training-list");
+                const trainingMeta = document.getElementById('training-list-meta');
+                const competitionMeta = document.getElementById('competition-list-meta');
+
+                const parseDate = (s) => {
+                    const v = String(s || '');
+                    if (!v) return null;
+                    const d = new Date(`${v}T00:00:00`);
+                    return Number.isFinite(d.getTime()) ? d : null;
+                };
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const sortAsc = (a, b) => String(a.date || '').localeCompare(String(b.date || ''));
+                const sortDesc = (a, b) => String(b.date || '').localeCompare(String(a.date || ''));
+
+                const upcomingTrainings = trainings
+                    .filter(t => parseDate(t.date) && parseDate(t.date) >= today)
+                    .sort(sortAsc);
+                const upcomingCompetitions = competitions
+                    .filter(c => parseDate(c.date) && parseDate(c.date) >= today)
+                    .sort(sortAsc);
+
+                const shownTrainings = upcomingTrainings.slice(0, 10);
+                const shownCompetitions = upcomingCompetitions.slice(0, 10);
+
+                competitionList.innerHTML = (shownCompetitions.length ? shownCompetitions : [null]).map(competition => competition ? `
+                    <li>
+                        <div>
+                            <strong><a href="${competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(competition.id))}">${competition.name}</a></strong>
+                            <p>Date: ${competition.date} | Sport: ${sportLabel(competition.sport)} | Distance: ${competition.distance || 'N/A'} km</p>
+                        </div>
+                        <button class="delete-button" onclick="deleteCompetition('${(competition.id || competition.name).toString().replace(/'/g, "\\'")}')">Supprimer</button>
+                    </li>
+                ` : `<li class="muted">Aucune compétition à venir</li>`).join("");
+
+                trainingList.innerHTML = (shownTrainings.length ? shownTrainings : [null]).map(training => training ? `
+                    <li>
+                        <div>
+                            <strong><a href="${trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(training.id))}">${training.title}</a></strong>
+                            <p>Date: ${training.date} | Sport: ${sportLabel(training.sport)} | Distance: ${(training.distance_km ?? 'N/A')} km</p>
+                        </div>
+                        <button class="delete-button" onclick="deleteTraining('${(training.id || training.title).toString().replace(/'/g, "\\'")}')">Supprimer</button>
+                    </li>
+                ` : `<li class="muted">Aucun entraînement planifié</li>`).join("");
+
+                if (trainingMeta) {
+                    trainingMeta.textContent = upcomingTrainings.length > 10
+                        ? `Affiché ${shownTrainings.length} / ${upcomingTrainings.length} (le reste est dans le calendrier)`
+                        : '';
+                }
+                if (competitionMeta) {
+                    competitionMeta.textContent = upcomingCompetitions.length > 10
+                        ? `Affiché ${shownCompetitions.length} / ${upcomingCompetitions.length} (le reste est dans le calendrier)`
+                        : '';
+                }
+            };
+
+            document.getElementById("prev-month").addEventListener("click", () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                loadMonthEvents().then(renderCalendar).catch(() => renderCalendar());
             });
-          }
-        });
 
-        // ENTRAÎNEMENTS manuels — vert
-        trainings.forEach(t => {
-          if (t.date === ymd) {
-            eventsRaw.push({
-              source: 'manual',
-              type: 'training',
-              name: t.name,
-              date: t.date,
-              distanceKm: (typeof t.distance === "number") ? t.distance : null,
-              durationMin: null,
-              typeKey: null
+            document.getElementById("next-month").addEventListener("click", () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                loadMonthEvents().then(renderCalendar).catch(() => renderCalendar());
             });
-          }
+
+            loadMonthEvents().then(renderCalendar).catch(() => renderCalendar());
+            renderList();
+
+            // Prefill planner from an existing activity if requested.
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const copyActivityId = params.get('copy_activity_id');
+                if (copyActivityId) {
+                    fetch(`${activityAsTrainingUrl}?activity_id=${encodeURIComponent(copyActivityId)}`, { headers: { 'Accept': 'application/json' } })
+                        .then((r) => r.ok ? r.json() : null)
+                        .then((data) => {
+                            if (!data) return;
+                            const d = new Date();
+                            d.setDate(d.getDate() + 7);
+                            const yyyy = d.getFullYear();
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const dd = String(d.getDate()).padStart(2, '0');
+
+                            if (data.title) document.getElementById('training-title').value = data.title;
+                            if (data.sport) document.getElementById('training-sport').value = data.sport;
+                            if (data.distance_km !== null && data.distance_km !== undefined) {
+                                document.getElementById('training-distance').value = String(data.distance_km);
+                            }
+                            document.getElementById('training-date').value = `${yyyy}-${mm}-${dd}`;
+                            setActiveTab('planner');
+                            document.getElementById('training-title').focus();
+                        })
+                        .catch(() => { /* ignore */ });
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            // default view
+            setActiveTab('calendar');
+
+            document.getElementById('add-competition').addEventListener('click', () => addEvent('competition'));
+            document.getElementById('add-training').addEventListener('click', () => addEvent('training'));
+                        document.getElementById('apply-preset').addEventListener('click', applyPreset);
+                        document.getElementById('training-preset').addEventListener('change', applyPreset);
         });
-
-        // COMPÉTITIONS fichier — rouge
-        competitions.forEach(c => {
-          if (c.date === ymd) {
-            eventsRaw.push({
-              source: 'manual',
-              type: 'competition',
-              name: c.name,
-              date: c.date,
-              distanceKm: (typeof c.distance === "number") ? c.distance : null,
-              durationMin: null,
-              typeKey: null
-            });
-          }
-        });
-
-        // PLANS — bleu
-        plans.forEach(p => {
-          if (p.date === ymd) {
-            eventsRaw.push({
-              source: 'plan',
-              type: 'planned',
-              name: p.name,
-              date: p.date,
-              distanceKm: (typeof p.distance === "number") ? p.distance : null,
-              durationMin: (typeof p.durationMin === "number") ? p.durationMin : null,
-              typeKey: null
-            });
-          }
-        });
-
-        // Dédoublonnage inter-sources (priorité: activity > competition > training > planned)
-        const prefer = { activity: 3, competition: 2, training: 1, planned: 0 };
-        const keyOf  = ev => `${(ev.name || '').trim().toLowerCase()}|${(ev.date || '').slice(0,10)}`;
-        const byKey  = new Map();
-        for (const ev of eventsRaw) {
-          const k = keyOf(ev);
-          const existing = byKey.get(k);
-          if (!existing || prefer[ev.type] > prefer[existing.type]) {
-            byKey.set(k, ev);
-          }
-        }
-        const events = Array.from(byKey.values());
-
-        // Affichage
-        events.forEach(ev => {
-          const div = document.createElement("div");
-          div.className =
-            ev.type === 'training'    ? "training-event" :
-            ev.type === 'competition' ? "competition-event" :
-            ev.type === 'planned'     ? "planned-event" : "activity-event";
-
-          div.textContent = `${ev.name}${labelText(ev)}`;
-
-          // Tooltip (reste ouvert si survol)
-          div.addEventListener("mouseenter", () => showTooltipFor(div, ev));
-          div.addEventListener("mouseleave", scheduleHideTooltip);
-
-          // Toujours cliquable : on enveloppe la pastille dans un <a>
-          const a = document.createElement("a");
-          a.href = eventHref(ev);
-          a.className = "badge-link clickable";
-          a.appendChild(div);
-          dayCell.appendChild(a);
-        });
-
-        row.appendChild(dayCell);
-      }
-
-      if (row.children.length > 0) {
-        calendarBody.appendChild(row);
-      }
-    };
-
-    // Listes latérales
-    const renderLists = () => {
-      const competitionList = document.getElementById("competition-list");
-      const trainingList    = document.getElementById("training-list");
-      const planList        = document.getElementById("plan-list");
-
-      competitionList.innerHTML = competitions.map(c => `
-        <li>
-          <div>
-            <strong>${c.name}</strong>
-            <p>Date: ${c.date} ${c.distance ? `| Distance: ${c.distance} km` : ""}</p>
-          </div>
-          <button class="delete-button" onclick="window.location.href='/remove_competition/${encodeURIComponent(c.name)}'">Supprimer</button>
-        </li>
-      `).join("");
-
-      trainingList.innerHTML = trainings.map(t => `
-        <li>
-          <div>
-            <strong>${t.name}</strong>
-            <p>Date: ${t.date} ${t.distance ? `| Distance: ${t.distance} km` : ""}</p>
-          </div>
-          <button class="delete-button" onclick="window.location.href='/remove_training/${encodeURIComponent(t.name)}'">Supprimer</button>
-        </li>
-      `).join("");
-
-      planList.innerHTML = plans.map((p, idx) => `
-        <li>
-          <div>
-            <strong>${p.name}</strong>
-            <p>Date: ${p.date}
-              ${p.distance ? `| Dist: ${p.distance} km` : ""}
-              ${p.durationMin ? `| Durée: ${p.durationMin} min` : ""}
-              ${p.ptype ? `| Type: ${p.ptype}` : ""}
-            </p>
-          </div>
-          <button class="delete-button" onclick="window.location.href='/remove_plan/${idx}'">Supprimer</button>
-        </li>
-      `).join("");
-    };
-
-    // API: tag d’activité
-    window.tag = async (activityId, tag) => {
-      try {
-        await fetch("/tag_activity", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ activityId, tag })
-        });
-        location.reload();
-      } catch (e) {
-        alert("Échec du marquage : " + e);
-      }
-    };
-
-    document.getElementById("prev-month").addEventListener("click", () => {
-      currentDate.setMonth(currentDate.getMonth() - 1);
-      renderCalendar();
-    });
-    document.getElementById("next-month").addEventListener("click", () => {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-      renderCalendar();
-    });
-
-    renderCalendar();
-    renderLists();
-  });
   </script>
-</body>
-</html>
+{% endblock %}

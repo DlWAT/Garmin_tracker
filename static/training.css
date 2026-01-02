@@ -1,43 +1,47 @@
-/* Général */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    background-color: #1E1E2F;
-    color: #FFF;
-}
-
-header {
-    text-align: center;
-    padding: 20px;
-    background-color: #282C34;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-
-header nav a {
-    color: #61DAFB;
-    margin: 0 15px;
-    text-decoration: none;
-    font-size: 1.1rem;
-}
-
-header nav a:hover {
-    text-decoration: underline;
-}
+/* Training: styles spécifiques, le global vit dans common.css */
 
 /* Conteneurs */
 .container {
     display: flex;
     gap: 20px;
-    padding: 20px;
+    padding: 0;
+}
+
+.container.container--stack {
+    display: block;
+}
+
+.training-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 0 0 14px 0;
+}
+
+.training-tab {
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.training-tab:hover {
+    border-color: rgba(76, 201, 240, 0.45);
+}
+
+.training-tab.is-active {
+    border-color: rgba(255, 77, 141, 0.55);
+    box-shadow: 0 0 0 2px rgba(255, 77, 141, 0.16) inset;
 }
 
 .calendar-container {
     flex: 2;
-    background-color: #2C313C;
+    background-color: var(--card);
     padding: 15px;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
 }
 
 .list-container {
@@ -47,6 +51,81 @@ header nav a:hover {
     gap: 20px;
 }
 
+.planner-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .planner-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.planner-card {
+    background-color: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border);
+}
+
+.planner-card--full {
+    grid-column: 1 / -1;
+}
+
+.planner-card h2 {
+    margin: 0 0 12px 0;
+    color: var(--accent);
+    font-size: 1.2rem;
+    border-bottom: 2px solid rgba(76, 201, 240, 0.45);
+    padding-bottom: 6px;
+}
+
+.planner-form {
+    display: block;
+    margin: 0;
+}
+
+.planner-form__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .planner-form__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.planner-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.planner-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(76, 201, 240, 0.35);
+    background-color: rgba(8, 12, 22, 0.85);
+    color: var(--text);
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.planner-textarea:focus-visible {
+    outline: 2px solid rgba(255, 77, 141, 0.35);
+    outline-offset: 2px;
+}
+
+.planner-textarea--content {
+    min-height: 170px;
+}
+
 /* Navigation calendrier */
 .calendar-navigation {
     display: flex;
@@ -54,12 +133,12 @@ header nav a:hover {
     align-items: center;
     margin-bottom: 15px;
     font-size: 1.5rem;
-    color: #61DAFB;
+    color: var(--accent);
 }
 
 .calendar-navigation button {
-    background-color: #61DAFB;
-    color: #1E1E2F;
+    background-color: var(--accent);
+    color: #000;
     border: none;
     padding: 5px 15px;
     border-radius: 5px;
@@ -68,7 +147,7 @@ header nav a:hover {
 }
 
 .calendar-navigation button:hover {
-    background-color: #529EC4;
+    background-color: var(--accent-hover);
 }
 
 /* Calendrier */
@@ -79,147 +158,158 @@ header nav a:hover {
 
 .calendar-table th, .calendar-table td {
     width: 14.28%;
-    height: 100px;
+    height: 120px;
     text-align: center;
     vertical-align: top;
-    border: 1px solid #3A3F47;
+    border: 1px solid var(--border);
     padding: 5px;
 }
 
 .calendar-table th {
-    background-color: #40444B;
-    color: #FFF;
+    background-color: var(--panel);
+    color: var(--text);
     font-weight: bold;
 }
 
 .day-cell {
     position: relative;
-    background-color: #3A3F47;
+    background-color: var(--muted-card);
     border-radius: 5px;
     overflow: hidden;
+    padding: 8px;
+    text-align: left;
 }
 
 .day-cell:hover {
-    background-color: #505763;
+    background-color: rgba(76, 201, 240, 0.10);
     cursor: pointer;
 }
 
+.day-number {
+    font-weight: 900;
+    color: rgba(234, 241, 255, 0.85);
+    margin-bottom: 6px;
+}
+
 /* Événements */
-.training-event {
-    background-color: #4CAF50;
-    color: #FFF;
+.activity-event {
+    background-color: rgba(76, 201, 240, 0.10);
+    color: var(--text);
+    border: 1px solid rgba(76, 201, 240, 0.25);
     padding: 5px;
     margin: 3px 0;
     border-radius: 3px;
     font-size: 0.9rem;
     text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-event.clickable {
+    cursor: pointer;
+}
+
+.activity-event.clickable:hover {
+    background-color: rgba(76, 201, 240, 0.16);
+    border-color: rgba(76, 201, 240, 0.35);
+}
+
+.training-event {
+    background-color: rgba(76, 201, 240, 0.18);
+    color: var(--text);
+    border: 1px solid rgba(76, 201, 240, 0.35);
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .competition-event {
-    background-color: #F44336;
-    color: #FFF;
+    background-color: rgba(255, 77, 141, 0.16);
+    color: var(--text);
+    border: 1px solid rgba(255, 77, 141, 0.35);
     padding: 5px;
     margin: 3px 0;
     border-radius: 3px;
     font-size: 0.9rem;
     text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.competition-event.clickable {
+    cursor: pointer;
+}
+
+.competition-event.clickable:hover {
+    background-color: rgba(255, 77, 141, 0.22);
+}
+
+.training-event.clickable {
+    cursor: pointer;
+}
+
+.training-event.clickable:hover {
+    background-color: rgba(76, 201, 240, 0.25);
 }
 
 /* Info-bulle */
 .tooltip {
     position: absolute;
-    background-color: #40444B;
-    color: white;
+    background-color: var(--panel);
+    color: var(--text);
     padding: 10px;
     border-radius: 5px;
     font-size: 0.9rem;
     display: none;
     z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
     white-space: pre-line;
 }
 
-/* Formulaires */
-form {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 15px;
-    flex-wrap: wrap; /* Permet un retour à la ligne si l'espace est trop limité */
-}
-
-form input, form button {
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 5px;
-    border: 1px solid #61DAFB;
-    flex: 1; /* Les champs s'adaptent à l'espace disponible */
-    max-width: calc(33% - 10px); /* Garde une taille raisonnable sur une seule ligne */
-    min-width: 100px; /* Évite que les champs soient trop petits */
-}
-
-form input[type="text"], form input[type="date"], form input[type="number"] {
-    background-color: #FFF;
-    color: #000;
-}
-
-form button {
-    background-color: #61DAFB;
-    color: #1E1E2F;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-    max-width: 100px; /* Taille fixe du bouton */
-}
-
-form button:hover {
-    background-color: #529EC4;
-}
-
-/* Listes */
-.list h2 {
-    margin-bottom: 15px;
-    color: #61DAFB;
-    font-size: 1.2rem;
-    border-bottom: 2px solid #61DAFB;
-    padding-bottom: 5px;
-}
-
-ul {
+/* Listes (planificateur) */
+.planner-card ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-ul li {
-    background-color: #3A3F47;
+.planner-card ul li {
+    background-color: var(--muted-card);
     padding: 10px;
     border-radius: 5px;
     margin-bottom: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border: 1px solid var(--border);
 }
 
-ul li div {
+.planner-card ul li div {
     flex: 1;
 }
 
-ul li strong {
+.planner-card ul li strong {
     display: block;
     font-size: 1rem;
     margin-bottom: 5px;
-    color: #FFF;
+    color: var(--text);
 }
 
-ul li p {
+.planner-card ul li p {
     font-size: 0.9rem;
-    color: #BBB;
+    color: var(--muted-text);
 }
 
-ul li button {
-    background-color: #F44336;
-    color: white;
+.planner-card ul li button {
+    background-color: var(--accent2);
+    color: #000;
     border: none;
     padding: 5px 10px;
     border-radius: 5px;
@@ -227,6 +317,6 @@ ul li button {
     font-size: 0.9rem;
 }
 
-ul li button:hover {
-    background-color: #E53935;
+.planner-card ul li button:hover {
+    background-color: var(--accent2-hover);
 }

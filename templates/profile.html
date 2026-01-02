@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+      <div>
+        <h1 style="margin-top:0;">Profil</h1>
+        <div class="muted">Règle ta FC max, ta VMA, et tes zones de fréquence cardiaque.</div>
+      </div>
+      <div>
+        <a class="btn" href="{{ url_for('dashboard') }}">Retour dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 16px;"></div>
+
+  <section class="card" aria-label="Records">
+    <h2 style="margin-top:0;">Records (course à pied)</h2>
+    <div class="muted">Meilleure performance par distance, basée sur les activités proches de la distance cible.</div>
+
+    {% if records and records|length %}
+      <div style="overflow:auto; margin-top: 10px;">
+        <table style="width:100%; border-collapse: collapse; min-width: 520px;">
+          <thead>
+            <tr class="muted" style="text-align:left;">
+              <th style="padding:8px 6px;">Distance</th>
+              <th style="padding:8px 6px;">Temps</th>
+              <th style="padding:8px 6px;">Date</th>
+              <th style="padding:8px 6px;">Activité</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in records %}
+              <tr style="border-top: 1px solid rgba(234, 241, 255, 0.08);">
+                <td style="padding:8px 6px; font-weight: 800;">{{ r.label }}</td>
+                <td style="padding:8px 6px;">{{ r.time if r.time else '—' }}</td>
+                <td style="padding:8px 6px;">{{ r.date if r.date else '—' }}</td>
+                <td style="padding:8px 6px;">
+                  {% if r.activity_id %}
+                    <a href="{{ url_for('activity_detail', activity_id=r.activity_id) }}">{{ r.activity_name or 'Voir activité' }}</a>
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="muted" style="margin-top: 10px;">Aucune activité de course détectée.</div>
+    {% endif %}
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="card" aria-label="À venir">
+    <h2 style="margin-top:0;">À venir</h2>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start;">
+      <div>
+        <h3 style="margin: 0 0 8px 0; color: var(--accent);">Prochains entraînements</h3>
+        {% if upcoming_trainings and upcoming_trainings|length %}
+          <ul style="list-style:none; padding:0; margin:0; display:grid; gap: 8px;">
+            {% for t in upcoming_trainings %}
+              <li style="padding:10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--muted-card);">
+                <div style="display:flex; justify-content:space-between; gap: 10px; flex-wrap: wrap;">
+                  <a href="{{ url_for('training_detail', training_id=t.id) }}" style="font-weight: 900;">{{ t.title }}</a>
+                  <span class="muted">{{ t.date }}</span>
+                </div>
+                <div class="muted" style="margin-top: 4px;">Sport: {{ t.sport }}{% if t.distance_km is not none %} • {{ t.distance_km }} km{% endif %}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="muted">Aucun entraînement planifié.</div>
+        {% endif %}
+      </div>
+
+      <div>
+        <h3 style="margin: 0 0 8px 0; color: var(--accent2);">Prochaines compétitions</h3>
+        {% if upcoming_competitions and upcoming_competitions|length %}
+          <ul style="list-style:none; padding:0; margin:0; display:grid; gap: 8px;">
+            {% for c in upcoming_competitions %}
+              <li style="padding:10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--muted-card);">
+                <div style="display:flex; justify-content:space-between; gap: 10px; flex-wrap: wrap;">
+                  <a href="{{ url_for('competition_detail', competition_id=c.id) }}" style="font-weight: 900;">{{ c.name }}</a>
+                  <span class="muted">{{ c.date }}</span>
+                </div>
+                <div class="muted" style="margin-top: 4px;">Sport: {{ c.sport }}{% if c.distance %} • {{ c.distance }} km{% endif %}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="muted">Aucune compétition à venir.</div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <form method="post" action="{{ url_for('profile') }}">
+    <section class="card" aria-label="Paramètres">
+      <h2 style="margin-top:0;">Paramètres</h2>
+
+      <div class="field">
+        <label for="fcmax">FC max (bpm)</label>
+        <input id="fcmax" name="fcmax" type="number" min="0" step="1" value="{{ profile.fcmax or '' }}" placeholder="ex: 190" />
+      </div>
+
+      <div class="field">
+        <label for="vma">VMA (km/h)</label>
+        <input id="vma" name="vma" type="number" min="0" step="0.1" value="{{ profile.vma or '' }}" placeholder="ex: 16.0" />
+      </div>
+    </section>
+
+    <div style="height: 16px;"></div>
+
+    <section class="card" aria-label="Zones FC">
+      <h2 style="margin-top:0;">Zones FC (bpm)</h2>
+      <div class="muted">Saisis les seuils <strong>max</strong> de Z1..Z4. Z5 = FC max.</div>
+
+      <div class="field">
+        <label for="z1">Z1 max</label>
+        <input id="z1" name="z1_max" type="number" min="0" step="1" value="{{ zones.z1_max or '' }}" />
+      </div>
+      <div class="field">
+        <label for="z2">Z2 max</label>
+        <input id="z2" name="z2_max" type="number" min="0" step="1" value="{{ zones.z2_max or '' }}" />
+      </div>
+      <div class="field">
+        <label for="z3">Z3 max</label>
+        <input id="z3" name="z3_max" type="number" min="0" step="1" value="{{ zones.z3_max or '' }}" />
+      </div>
+      <div class="field">
+        <label for="z4">Z4 max</label>
+        <input id="z4" name="z4_max" type="number" min="0" step="1" value="{{ zones.z4_max or '' }}" />
+      </div>
+
+      {% if zone_scale %}
+        <div style="height: 10px;"></div>
+        <div class="muted">Aperçu</div>
+        <div class="zone-scale" role="img" aria-label="Échelle zones fréquence cardiaque">
+          {% for seg in zone_scale %}
+            <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
+          {% endfor %}
+        </div>
+        <div class="zone-scale__labels">
+          {% for seg in zone_scale %}
+            <div class="zone-scale__label">{{ seg.short }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+    <div style="height: 16px;"></div>
+
+    <button class="btn btn--pink" type="submit">Enregistrer</button>
+  </form>
+{% endblock %}

@@ -1,20 +1,257 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garmin Tracker</title>
-</head>
-<body>
-    <h1>Bienvenue sur Garmin Tracker</h1>
-    <nav>
-        <ul>
-            <a href="/">Accueil</a>
-            <a href="/activity">Activités</a>
-            <a href="/health">Santé</a>
-            <a href="/training">Entraînements</a>
-            <a href="/tracking" class="active">Suivi</a>
-        </ul>
-    </nav>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block head_extra %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='activity.css') }}">
+{% endblock %}
+
+{% block content %}
+    <section class="card">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+            <div>
+                <h1 style="margin-top: 0;">Dashboard</h1>
+                <div class="muted">Tous sports — {{ period_label }}</div>
+                {% if viewing_user_id and user_id and viewing_user_id != user_id %}
+                    <div class="muted">Vue: {{ viewing_user_id }}</div>
+                {% endif %}
+            </div>
+            <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=prev_anchor, user=viewing_user_id, sport=sport) }}">◀</a>
+                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=next_anchor, user=viewing_user_id, sport=sport) }}">▶</a>
+            </div>
+        </div>
+
+        <div style="height: 12px;"></div>
+
+        <form method="get" action="{{ url_for('dashboard') }}" style="display:flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+            <input type="hidden" name="user" value="{{ viewing_user_id }}" />
+            <div class="field" style="margin:0; min-width: 180px;">
+                <label for="period">Période</label>
+                <select id="period" name="period" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text);">
+                    <option value="week" {% if period == 'week' %}selected{% endif %}>Semaine</option>
+                    <option value="month" {% if period == 'month' %}selected{% endif %}>Mois</option>
+                    <option value="year" {% if period == 'year' %}selected{% endif %}>Année</option>
+                </select>
+            </div>
+
+            <div class="field" style="margin:0; min-width: 180px;">
+                <label for="sport">Sport (graphiques)</label>
+                <select id="sport" name="sport" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text);">
+                    <option value="all" {% if sport == 'all' or not sport %}selected{% endif %}>Tous</option>
+                    {% for s in available_sports %}
+                        <option value="{{ s }}" {% if sport == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field" style="margin:0; min-width: 180px;">
+                <label for="anchor">Date</label>
+                <input id="anchor" name="anchor" type="date" value="{{ anchor }}" />
+            </div>
+
+            <button class="btn btn--pink" type="submit">Afficher</button>
+            <a class="btn" href="{{ url_for('profile') }}">Régler zones</a>
+        </form>
+    </section>
+
+    <div style="height: 16px;"></div>
+
+    <section class="card" aria-label="Prochainements">
+        <h2 style="margin-top:0;">Prochainements</h2>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+            <div>
+                <div style="font-weight: 900; margin-bottom: 8px;">Prochains entraînements</div>
+                {% if next_trainings and next_trainings|length %}
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        {% for t in next_trainings %}
+                            <li style="background: var(--muted-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                                {% if viewing_user_id == user_id %}
+                                    <a href="{{ url_for('training_detail', training_id=t.id) }}" style="text-decoration: none; color: var(--text); font-weight: 800;">
+                                        {{ t.date }} — {{ t.title }}
+                                    </a>
+                                {% else %}
+                                    <strong style="color: var(--text);">{{ t.date }} — {{ t.title }}</strong>
+                                {% endif %}
+                                <div class="muted" style="margin-top: 4px;">
+                                    {{ t.sport_label }}
+                                    {% if t.distance_km is not none %}
+                                        &nbsp;•&nbsp;{{ "%.1f"|format(t.distance_km|float) }} km
+                                    {% endif %}
+                                </div>
+                                {% if t.description %}
+                                    <div class="muted" style="margin-top: 4px;">{{ t.description }}</div>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="muted">Aucun entraînement planifié.</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <div style="font-weight: 900; margin-bottom: 8px;">Prochaines compétitions</div>
+                {% if next_competitions and next_competitions|length %}
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        {% for c in next_competitions %}
+                            <li style="background: var(--muted-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                                {% if viewing_user_id == user_id %}
+                                    <a href="{{ url_for('competition_detail', competition_id=c.id) }}" style="text-decoration: none; color: var(--text); font-weight: 800;">
+                                        {{ c.date }} — {{ c.name }}
+                                    </a>
+                                {% else %}
+                                    <strong style="color: var(--text);">{{ c.date }} — {{ c.name }}</strong>
+                                {% endif %}
+                                <div class="muted" style="margin-top: 4px;">
+                                    {{ c.sport_label }}
+                                    {% if c.distance is not none %}
+                                        &nbsp;•&nbsp;{{ c.distance }} km
+                                    {% endif %}
+                                    {% if c.location %}
+                                        &nbsp;•&nbsp;{{ c.location }}
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="muted">Aucune compétition planifiée.</div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <div style="height: 16px;"></div>
+
+    <section class="card" aria-label="Compte rendu">
+        <h2 style="margin-top:0;">Compte rendu</h2>
+        <div class="muted">{{ intensity_summary }}</div>
+        {% if report_lines and report_lines|length %}
+            <div style="height: 10px;"></div>
+            {% for line in report_lines %}
+                <div class="muted">• {{ line }}</div>
+            {% endfor %}
+        {% else %}
+            <div class="muted">Temps cumulé: {{ total_time }}</div>
+        {% endif %}
+        <div style="height: 10px;"></div>
+        <div class="muted">Conseil: ajuste tes zones dans Profil pour fiabiliser les répartitions.</div>
+    </section>
+
+    <div style="height: 16px;"></div>
+
+    <section class="card" aria-label="Par sport">
+        <h2 style="margin-top:0;">Par sport</h2>
+        {% if not sport_rows %}
+            <div class="muted">Aucune activité sur la période.</div>
+        {% else %}
+            <div style="overflow:auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr class="muted" style="text-align:left;">
+                            <th style="padding:8px 6px;">Sport</th>
+                            <th style="padding:8px 6px;">Séances</th>
+                            <th style="padding:8px 6px;">Temps</th>
+                            <th style="padding:8px 6px;">Distance</th>
+                            <th style="padding:8px 6px;">Charge</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in sport_rows %}
+                            <tr style="border-top: 1px solid rgba(234, 241, 255, 0.08);">
+                                <td style="padding:8px 6px; font-weight: 800;">{{ r.sport }}</td>
+                                <td style="padding:8px 6px;">{{ r.count }}</td>
+                                <td style="padding:8px 6px;">{{ r.time }}</td>
+                                <td style="padding:8px 6px;">{{ r.km }} km</td>
+                                <td style="padding:8px 6px;">{{ r.load }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+
+    {% if dashboard_graphs and dashboard_graphs|length %}
+        <div style="height: 16px;"></div>
+        <section class="card" aria-label="Graphiques">
+            <h2 style="margin-top:0;">Graphiques</h2>
+            <section class="graph-grid">
+                {% for g in dashboard_graphs %}
+                    <iframe class="graph-frame" loading="lazy" src="{{ g.url }}" title="{{ g.title }}"></iframe>
+                {% endfor %}
+            </section>
+        </section>
+    {% endif %}
+
+    <div style="height: 16px;"></div>
+
+    <section class="card" aria-label="Zones FC">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+            <h2 style="margin-top:0;">Zones de fréquence cardiaque</h2>
+            {% if not zones %}
+                <div class="muted">Définis ta FC max et tes zones dans Profil.</div>
+            {% elif zones_inferred %}
+                <div class="muted">Zones estimées (FC max observée: {{ fcmax_used }}). Règle Profil pour fiabiliser.</div>
+            {% endif %}
+        </div>
+
+        {% if zone_dist %}
+            <div class="muted" style="margin-bottom: 6px;">Répartition (temps, %)</div>
+            <div class="zone-scale" role="img" aria-label="Répartition zones fréquence cardiaque (temps)">
+                {% for seg in zone_dist %}
+                    <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
+                {% endfor %}
+            </div>
+            <div class="zone-scale__labels">
+                {% for seg in zone_dist %}
+                    <div class="zone-scale__label">{{ seg.short }}</div>
+                {% endfor %}
+            </div>
+            <div style="height: 12px;"></div>
+        {% endif %}
+
+        {% if zone_target %}
+            <div class="muted" style="margin-bottom: 6px;">Objectif (référence)</div>
+            <div class="zone-scale" role="img" aria-label="Objectif de répartition zones fréquence cardiaque">
+                {% for seg in zone_target %}
+                    <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
+                {% endfor %}
+            </div>
+            <div class="zone-scale__labels">
+                {% for seg in zone_target %}
+                    <div class="zone-scale__label">{{ seg.short }}</div>
+                {% endfor %}
+            </div>
+            <div style="height: 12px;"></div>
+        {% endif %}
+
+        <div class="zones">
+            {% for z in zones_rows %}
+                <div class="zone">
+                    <div class="zone__top">
+                        <span style="font-weight: 900;">{{ z.zone }}</span>
+                        <span class="muted">{{ z.time }} · {{ z.km }} km</span>
+                        <span class="muted">{{ z.pct_time }}%</span>
+                        <span class="muted">{{ z.pct_km }}%</span>
+                    </div>
+                    <div class="zone__bar">
+                        <div class="zone__barFill" style="width: {{ z.pct_time }}%; background: {{ z.color }};"></div>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div class="zone">
+                <div class="zone__top">
+                    <span style="font-weight: 900;">Total</span>
+                    <span class="muted">{{ total_time }} · {{ total_km }} km</span>
+                    <span class="muted">100%</span>
+                    <span class="muted">100%</span>
+                </div>
+                <div class="zone__bar">
+                    <div class="zone__barFill" style="width: 100%; background: rgba(234, 241, 255, 0.12);"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

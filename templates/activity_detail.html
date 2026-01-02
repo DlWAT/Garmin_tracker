@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Activité - Garmin Tracker{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='activity.css') }}">
+  {% if map_polyline %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="activity-header">
+    <div>
+      <h1 style="margin: 0;">{{ title }}</h1>
+      <div class="muted">{{ subtitle }}</div>
+    </div>
+    <button class="btn" onclick="window.location.href='{{ url_for('activity') }}'">Retour</button>
+  </div>
+
+  <div class="detail-grid">
+    <section class="card" aria-label="Résumé">
+      <h2 style="margin-top: 0;">Résumé</h2>
+      <div class="activity-kv">
+        <div class="activity-kv__row"><span class="muted">Sport</span><span>{{ sport_label }}</span></div>
+        <div class="activity-kv__row"><span class="muted">Date</span><span>{{ summary.get('startTimeLocal') or summary.get('startTimeGMT') or '—' }}</span></div>
+        <div class="activity-kv__row"><span class="muted">Distance</span><span>{{ distance_km }} km</span></div>
+        <div class="activity-kv__row"><span class="muted">Durée</span><span>{{ duration_hm }}</span></div>
+        <div class="activity-kv__row"><span class="muted">Allure</span><span>{{ pace }}</span></div>
+        <div class="activity-kv__row"><span class="muted">FC moyenne</span><span>{{ avg_hr }}</span></div>
+        <div class="activity-kv__row"><span class="muted">FC max</span><span>{{ max_hr }}</span></div>
+        <div class="activity-kv__row"><span class="muted">Calories</span><span>{{ calories }}</span></div>
+        <div class="activity-kv__row"><span class="muted">D+ / D-</span><span>{{ elev_gain }} / {{ elev_loss }}</span></div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Qualité des données">
+      <h2 style="margin-top: 0;">Données</h2>
+      <div class="activity-kv">
+        <div class="activity-kv__row"><span class="muted">GPS</span><span>{{ 'Oui' if has_gps else 'Non / inconnu' }}</span></div>
+        <div class="activity-kv__row"><span class="muted">Points</span><span>{{ points_count if points_count is not none else '—' }}</span></div>
+        <div class="activity-kv__row"><span class="muted">Mesures</span><span>{{ metric_keys|length }}</span></div>
+      </div>
+
+      {% if metric_keys %}
+        <div style="height: 10px;"></div>
+        <details class="activity-disclosure">
+          <summary class="activity-disclosure__summary">
+            <span style="font-weight: 800;">Mesures disponibles</span>
+            <span class="muted">({{ metric_keys|length }})</span>
+          </summary>
+          <div style="height: 10px;"></div>
+          <div class="chips">
+            {% for k in metric_keys %}
+              <span class="chip">{{ k }}</span>
+            {% endfor %}
+          </div>
+        </details>
+      {% endif %}
+    </section>
+  </div>
+
+  <div style="height: 16px;"></div>
+
+  <section class="card" aria-label="Planifier">
+    <h2 style="margin-top: 0;">Planifier</h2>
+    <div class="muted">Créer un entraînement planifié à partir de cette activité.</div>
+    <div style="height: 10px;"></div>
+    <a class="btn btn--pink" href="{{ url_for('training') }}?copy_activity_id={{ activity_id }}">Planifier à partir de cette séance</a>
+  </section>
+
+  {% if planned %}
+    <section class="card" aria-label="Entraînement planifié">
+      <h2 style="margin-top: 0;">Entraînement planifié</h2>
+      <div class="muted">Séance programmée le même jour pour ce sport.</div>
+      <div style="height: 10px;"></div>
+      <div>
+        <strong style="color: var(--text);">{{ planned.title }}</strong>
+        {% if planned.id %}
+          <span class="muted">• <a href="{{ url_for('training_detail', training_id=planned.id) }}">Voir la fiche</a></span>
+        {% endif %}
+      </div>
+      {% if planned.notes %}
+        <div class="muted" style="margin-top: 6px;">
+          {% if planned.notes %}<div style="margin-top: 6px;"><b>Remarques</b>: {{ planned.notes }}</div>{% endif %}
+        </div>
+      {% endif %}
+      {% if planned.description %}
+        <div class="muted" style="margin-top: 6px;">{{ planned.description }}</div>
+      {% endif %}
+      {% if planned.content %}
+        <pre style="white-space: pre-wrap; margin: 12px 0 0 0; background: var(--muted-card); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: var(--text);">{{ planned.content }}</pre>
+      {% endif %}
+    </section>
+
+    <div style="height: 16px;"></div>
+  {% endif %}
+
+  {% if graph_urls %}
+    <section class="card" aria-label="Graphiques">
+      <h2 style="margin-top: 0;">Graphiques</h2>
+      <div class="muted">Courbes calculées depuis les métriques de l'activité.</div>
+      <div style="height: 10px;"></div>
+      <section class="graph-grid">
+        {% for src in graph_urls %}
+          <iframe class="graph-frame" loading="lazy" src="{{ src }}"></iframe>
+        {% endfor %}
+      </section>
+    </section>
+
+    <div style="height: 16px;"></div>
+  {% endif %}
+
+  {% if map_polyline %}
+    <section class="card" aria-label="Carte">
+      <h2 style="margin-top: 0;">Carte</h2>
+      <div class="muted">Trace GPS (si disponible).</div>
+      <div style="height: 10px;"></div>
+      <div id="activity-map" class="activity-map"></div>
+    </section>
+
+    <script>
+      (function () {
+        const encoded = {{ map_polyline | tojson }};
+        if (!encoded || typeof L === 'undefined') return;
+
+        function decodePolyline(str) {
+          let index = 0;
+          let lat = 0;
+          let lng = 0;
+          const coordinates = [];
+
+          while (index < str.length) {
+            let b, shift = 0, result = 0;
+            do {
+              b = str.charCodeAt(index++) - 63;
+              result |= (b & 0x1f) << shift;
+              shift += 5;
+            } while (b >= 0x20);
+            const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+            do {
+              b = str.charCodeAt(index++) - 63;
+              result |= (b & 0x1f) << shift;
+              shift += 5;
+            } while (b >= 0x20);
+            const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+            lng += dlng;
+
+            coordinates.push([lat / 1e5, lng / 1e5]);
+          }
+          return coordinates;
+        }
+
+        const pts = decodePolyline(encoded);
+        if (!pts || !pts.length) return;
+
+        const map = L.map('activity-map', { zoomControl: true });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4CC9F0';
+        const line = L.polyline(pts, { color: accent, weight: 4, opacity: 0.9 }).addTo(map);
+        map.fitBounds(line.getBounds(), { padding: [14, 14] });
+      })();
+    </script>
+
+    <div style="height: 16px;"></div>
+  {% endif %}
+
+  <section class="card" aria-label="Détails">
+    <h2 style="margin-top: 0;">Détails</h2>
+    {% if details_bundle %}
+      {% if training_items %}
+        <details class="activity-disclosure" open>
+          <summary class="activity-disclosure__summary">
+            <span style="font-weight: 800;">Entraînement</span>
+            <span class="muted">(effets, charge…)</span>
+          </summary>
+          <div style="height: 10px;"></div>
+          <div class="activity-kv">
+            {% for it in training_items %}
+              <div class="activity-kv__row"><span class="muted">{{ it.label }}</span><span>{{ it.value }}</span></div>
+            {% endfor %}
+          </div>
+        </details>
+        <div style="height: 12px;"></div>
+      {% endif %}
+
+      {% if hr_zones_rows %}
+        <details class="activity-disclosure" open>
+          <summary class="activity-disclosure__summary">
+            <span style="font-weight: 800;">Zones de fréquence cardiaque</span>
+            <span class="muted">(temps passé)</span>
+          </summary>
+          <div style="height: 10px;"></div>
+          <div class="zones">
+            {% for z in hr_zones_rows %}
+              <div class="zone">
+                <div class="zone__top">
+                  <span style="font-weight: 800;">{{ z.zone }}</span>
+                  <span class="muted">≥ {{ z.low }} bpm</span>
+                  <span class="muted">{{ z.duration }}</span>
+                  <span class="muted">{{ z.percent }}%</span>
+                </div>
+                <div class="zone__bar"><div class="zone__barFill" style="width: {{ z.percent }}%; background: {{ z.color }};"></div></div>
+              </div>
+            {% endfor %}
+          </div>
+        </details>
+        <div style="height: 12px;"></div>
+      {% endif %}
+
+      {% if laps_rows %}
+        <details class="activity-disclosure" open>
+          <summary class="activity-disclosure__summary">
+            <span style="font-weight: 800;">Tours (laps)</span>
+            <span class="muted">({{ laps_rows|length }})</span>
+          </summary>
+          <div style="height: 10px;"></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Distance</th>
+                  <th>Durée</th>
+                  <th>Allure</th>
+                  <th>Vitesse</th>
+                  <th>FC moy.</th>
+                  <th>FC max</th>
+                  <th>Cadence</th>
+                  <th>PWR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in laps_rows %}
+                  <tr>
+                    <td>{{ r.idx }}</td>
+                    <td>{{ r.distance }}</td>
+                    <td>{{ r.duration }}</td>
+                    <td>{{ r.pace }}</td>
+                    <td>{{ r.speed }}</td>
+                    <td>{{ r.avg_hr }}</td>
+                    <td>{{ r.max_hr }}</td>
+                    <td>{{ r.avg_cad }}</td>
+                    <td>{{ r.avg_pwr }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+        <div style="height: 12px;"></div>
+      {% endif %}
+
+      {% if typed_splits_rows %}
+        <details class="activity-disclosure">
+          <summary class="activity-disclosure__summary">
+            <span style="font-weight: 800;">Splits Garmin</span>
+            <span class="muted">({{ typed_splits_rows|length }})</span>
+          </summary>
+          <div style="height: 10px;"></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Distance</th>
+                  <th>Durée</th>
+                  <th>Allure</th>
+                  <th>Vitesse</th>
+                  <th>FC moy.</th>
+                  <th>FC max</th>
+                  <th>Cadence</th>
+                  <th>PWR</th>
+                  <th>kcal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in typed_splits_rows %}
+                  <tr>
+                    <td>{{ r.type }}</td>
+                    <td>{{ r.distance }}</td>
+                    <td>{{ r.duration }}</td>
+                    <td>{{ r.pace }}</td>
+                    <td>{{ r.speed }}</td>
+                    <td>{{ r.avg_hr }}</td>
+                    <td>{{ r.max_hr }}</td>
+                    <td>{{ r.avg_cad }}</td>
+                    <td>{{ r.avg_pwr }}</td>
+                    <td>{{ r.cal }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+        <div style="height: 12px;"></div>
+      {% endif %}
+
+      <details class="activity-disclosure">
+        <summary class="activity-disclosure__summary">
+          <span style="font-weight: 800;">Détails Garmin</span>
+          <span class="muted">(JSON brut)</span>
+        </summary>
+        <div style="height: 10px;"></div>
+        <pre class="code-block">{{ details_bundle | tojson(indent=2) }}</pre>
+      </details>
+    {% else %}
+      <div class="card card--muted">
+        <strong>Détails indisponibles</strong>
+        <div class="muted">Clique sur “Mettre à jour” dans la page Activités pour synchroniser les détails.</div>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

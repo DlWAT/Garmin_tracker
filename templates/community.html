@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="card">
+    <h1 style="margin-top:0;">Communauté</h1>
+    <div class="muted">Accède aux dashboards de tout le monde.</div>
+  </section>
+
+  <div style="height: 16px;"></div>
+
+  <section class="card" aria-label="Utilisateurs">
+    <h2 style="margin-top:0;">Dashboards</h2>
+
+    {% if not users %}
+      <div class="muted">Aucun compte.</div>
+    {% else %}
+      <div style="display:grid; gap: 10px;">
+        {% for u in users %}
+          <div class="card card--muted" style="margin:0;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+              <div>
+                <div style="font-weight: 900;">{{ u.display_name }}</div>
+                <div class="muted">{{ u.user_id }}</div>
+              </div>
+              <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <a class="btn" href="{{ url_for('dashboard', user=u.user_id) }}">Voir dashboard</a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,12 +1,45 @@
 {% extends "base.html" %}
+
+{% block title %}Santé - Garmin Tracker{% endblock %}
+
+{% block head_extra %}
+    <script defer src="{{ url_for('static', filename='progress.js') }}"></script>
+{% endblock %}
+
 {% block content %}
-<h1>Health</h1>
-<button onclick="window.location.href='/update_health';">Update Health Data</button>
-<div class="graph-container">
-    {% for graph in health_graphs %}
-    <div class="graph">
-        <img src="{{ graph }}" alt="Health Graph">
+    <div class="activity-header">
+        <h1 style="margin: 0;">Santé</h1>
+            <form method="post" action="{{ url_for('update_health') }}" class="sync-form">
+            <input name="garmin_password" type="password" placeholder="Mot de passe Garmin" required style="min-width: 220px;" />
+            <button class="btn" type="submit">Mettre à jour</button>
+        </form>
     </div>
-    {% endfor %}
-</div>
+
+    {% if task_id and task_status_url %}
+        <div class="card card--muted" id="task-progress" data-status-url="{{ task_status_url }}" data-redirect-url="{{ url_for('health') }}">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <strong>Mise à jour en cours</strong>
+                <span class="muted" data-progress-percent>0%</span>
+            </div>
+            <div style="height: 10px;"></div>
+            <div class="progress"><div class="progress__bar" data-progress-bar></div></div>
+            <div class="muted" style="margin-top: 10px;" data-progress-message>…</div>
+            <div class="muted" style="margin-top: 6px; color: var(--accent2);" data-progress-error></div>
+        </div>
+
+        <div style="height: 12px;"></div>
+    {% endif %}
+
+    {% if graphs %}
+        <section class="graph-grid">
+            {% for graph in graphs %}
+                <iframe class="graph-frame" loading="lazy" src="{{ graph }}"></iframe>
+            {% endfor %}
+        </section>
+    {% else %}
+        <div class="card card--muted">
+            <strong>Graphiques indisponibles</strong>
+            <div class="muted">Clique sur “Mettre à jour” pour synchroniser ta santé.</div>
+        </div>
+    {% endif %}
 {% endblock %}

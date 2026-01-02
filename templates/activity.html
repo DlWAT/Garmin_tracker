@@ -1,56 +1,117 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse des Activités</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='common.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='activity.css') }}">
-</head>
-<body>
-    <!-- En-tête -->
-    <header>
-        <h1>Analyse des Activités</h1>
-        <nav>
-            <a href="/">Accueil</a>
-            <a href="/activity">Activités</a>
-            <a href="/health">Santé</a>
-            <a href="/training">Entraînements</a>
-            <a href="/tracking" class="active">Suivi</a>
-        </nav>
-    </header>
+{% extends "base.html" %}
 
-    <!-- Bouton Retour aux Activités -->
-    <section class="update-button">
-        <a href="/activity" class="button">Retour aux Activités</a>
-    </section>
+{% block title %}Activités - Garmin Tracker{% endblock %}
 
-    <!-- Contenu principal -->
-    <main class="content">
-        <!-- Graphiques à gauche -->
-        <div class="graph-container">
-            <iframe src="{{ url_for('static', filename='activity/distance.html') }}"></iframe>
-            <iframe src="{{ url_for('static', filename='activity/duration.html') }}"></iframe>
-            <iframe src="{{ url_for('static', filename='activity/pace.html') }}"></iframe>
-            <iframe src="{{ url_for('static', filename='activity/average_hr.html') }}"></iframe>
-        </div>
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='activity.css') }}">
+  <script defer src="{{ url_for('static', filename='progress.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='activity_tabs.js') }}"></script>
+{% endblock %}
 
-        <!-- Liste des activités à droite -->
-        <aside class="activity-list">
-            <h2>Dernières Activités</h2>
-            <ul>
-                {% for activity in activities %}
-                    <li>
-                        <a href="{{ url_for('activity_details', activity_id=activity.activityId) }}">
-                            <strong>{{ activity.date }}</strong>
-                            <span>{{ activity.distance }} km</span>
-                            <span>{{ activity.duration }}</span>
-                            <span>{{ activity.avg_pace }}</span>
-                        </a>
-                    </li>
+{% block content %}
+  <div class="activity-header">
+    <h1 style="margin: 0;">Activités</h1>
+      <form method="post" action="{{ url_for('update_activity') }}" class="sync-form">
+      <input name="garmin_password" type="password" placeholder="Mot de passe Garmin" required style="min-width: 220px;" />
+      <button class="btn" type="submit">Mettre à jour</button>
+    </form>
+  </div>
+
+  {% if task_id and task_status_url %}
+    <div class="card card--muted" id="task-progress" data-status-url="{{ task_status_url }}" data-redirect-url="{{ url_for('activity') }}">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <strong>Mise à jour en cours</strong>
+        <span class="muted" data-progress-percent>0%</span>
+      </div>
+      <div style="height: 10px;"></div>
+      <div class="progress"><div class="progress__bar" data-progress-bar></div></div>
+      <div class="muted" style="margin-top: 10px;" data-progress-message>…</div>
+      <div class="muted" style="margin-top: 6px; color: var(--accent2);" data-progress-error></div>
+    </div>
+
+    <div style="height: 12px;"></div>
+  {% endif %}
+
+  <section class="card" aria-label="Activités">
+    <h2 style="margin-top: 0;">Par sport</h2>
+    <div class="muted" style="margin-top: -8px; margin-bottom: 12px;">Natation • Vélo • Course à pied • Musculation</div>
+
+    {% if not sport_tabs %}
+      <div class="muted">Aucune activité disponible. Clique sur “Mettre à jour”.</div>
+    {% else %}
+      <div class="tabs" data-tabs data-active-tab="{{ active_tab or '' }}">
+        {% for t in sport_tabs %}
+          <button type="button" class="tab-btn" data-tab-button="{{ t.type_key }}" aria-selected="false">
+            {{ t.type_label }}
+          </button>
+        {% endfor %}
+      </div>
+
+      <div style="height: 12px;"></div>
+
+      {% for t in sport_tabs %}
+        <div class="tab-panel" data-tab-panel="{{ t.type_key }}">
+          {% if t.graphs %}
+            <section class="graph-grid" aria-label="Graphiques {{ t.type_label }}">
+              {% for src in t.graphs %}
+                <iframe class="graph-frame" loading="lazy" src="{{ src }}"></iframe>
+              {% endfor %}
+            </section>
+            <div style="height: 12px;"></div>
+          {% else %}
+            <div class="card card--muted">
+              <strong>Graphiques indisponibles</strong>
+              <div class="muted">Synchronise pour générer les graphes.</div>
+            </div>
+            <div style="height: 12px;"></div>
+          {% endif %}
+
+          {% if t.activities %}
+            <div class="activity-scroll">
+              <ul class="activity-items">
+                {% for a in t.activities %}
+                  <li class="activity-item">
+                    {% if a.activity_id %}
+                      <a class="activity-link" href="{{ url_for('activity_detail', activity_id=a.activity_id) }}">
+                        <div class="activity-item__date">{{ a.date }}</div>
+                        <div class="activity-item__meta">
+                          <span style="font-weight: 800; color: var(--text);">{{ a.name }}</span>
+                          {% if a.distance and a.distance > 0 %}<span>{{ a.distance }} km</span>{% endif %}
+                          <span>{{ a.duration }}</span>
+                          {% if a.avg_pace %}<span>{{ a.avg_pace }}</span>{% endif %}
+                        </div>
+                        {% if a.planned %}
+                          <div class="muted" style="margin-top: 8px;">
+                            Planifié: <strong style="color: var(--text);">{{ a.planned.title }}</strong>
+                            {% if a.planned.description %}
+                              — {{ a.planned.description|truncate(140, True, '…') }}
+                            {% elif a.planned.content %}
+                              — {{ a.planned.content|replace('\n', ' ')|truncate(140, True, '…') }}
+                            {% endif %}
+                            {% if a.planned.id %}
+                              <span>• <a href="{{ url_for('training_detail', training_id=a.planned.id) }}">Voir séance</a></span>
+                            {% endif %}
+                          </div>
+                        {% endif %}
+                      </a>
+                    {% else %}
+                      <div class="activity-item__date">{{ a.date }}</div>
+                      <div class="activity-item__meta">
+                        <span style="font-weight: 800; color: var(--text);">{{ a.name }}</span>
+                        {% if a.distance and a.distance > 0 %}<span>{{ a.distance }} km</span>{% endif %}
+                        <span>{{ a.duration }}</span>
+                        {% if a.avg_pace %}<span>{{ a.avg_pace }}</span>{% endif %}
+                      </div>
+                    {% endif %}
+                  </li>
                 {% endfor %}
-            </ul>
-        </aside>
-    </main>
-</body>
-</html>
+              </ul>
+            </div>
+          {% else %}
+            <div class="muted">Aucune activité pour ce sport sur la période.</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </section>
+{% endblock %}
