@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.log
+
+# Virtual env
+.venv/
+.venv*/
+venv/
+
+# Flask
+instance/
+
+# Data / outputs
+/data/*.json
+/garmin_data/
+/output_graphs_activities/
+/output_graphs_health/
+/static/activity/
+/static/health/
+/static/dashboard/
+/static/training/*.html
+/static/dashboard/
+/static/**/.graph_cache.json
+
+# Local logs / runtime
+garmin_tracker.log
+
+# IDE
+.vscode/
+.idea/
+
+# Python tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# DB / local state
+*.sqlite
+*.sqlite3
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
