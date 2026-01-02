@@ -1,0 +1,32 @@
+[Unit]
+Description=Garmin Tracker (Flask app via Waitress)
+After=network.target
+
+[Service]
+Type=simple
+
+# Change these paths to match your server install directory
+# Recommended layout (like PolyTalk): /opt/garmin-tracker/app
+WorkingDirectory=/opt/garmin-tracker/app
+
+# Load secrets and config (create this file)
+EnvironmentFile=/etc/garmin-tracker.env
+
+# Use the venv waitress (recommended)
+ExecStart=/opt/garmin-tracker/app/.venv/bin/waitress-serve --host ${GARMIN_TRACKER_HOST} --port ${GARMIN_TRACKER_PORT} wsgi:app
+
+Restart=on-failure
+RestartSec=2
+
+# Hardening (safe defaults)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+# If you run as a dedicated user, uncomment and adapt:
+# User=garmin
+# Group=garmin
+
+[Install]
+WantedBy=multi-user.target

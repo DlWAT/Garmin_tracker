@@ -36,7 +36,7 @@ from .models import GarminAccount, User
 _SESSION_KEY = "garmin_session_token"
 
 
-URL_PREFIX = "/mytrainer"
+URL_PREFIX = (os.getenv("GARMIN_TRACKER_URL_PREFIX") or "/mytrainer").rstrip("/") or ""
 
 
 # Minimal admin support (no DB migration).
@@ -256,6 +256,10 @@ def create_app() -> Flask:
         static_folder=static_dir,
         static_url_path=f"{URL_PREFIX}/static",
     )
+    # Allow multiple Flask apps to coexist on the same domain/IP under different
+    # URL prefixes (e.g. /polytalk and /mytrainer) without session cookie clashes.
+    app.config["SESSION_COOKIE_NAME"] = "garmin_tracker_session"
+    app.config["SESSION_COOKIE_PATH"] = URL_PREFIX or "/"
     # Improve perceived performance when navigating between pages.
     # In debug mode, Flask tends to be conservative with caching.
     app.config.setdefault("SEND_FILE_MAX_AGE_DEFAULT", 3600)
