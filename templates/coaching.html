@@ -1,0 +1,559 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('Coaching') }} - Garmin Tracker{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
+{% endblock %}
+
+{% block content %}
+  <style>
+    .coaching-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 32px; background: linear-gradient(135deg, rgba(76, 201, 240, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%); border-bottom: 1px solid var(--border); }
+    .coaching-header h1 { margin: 0; font-size: 2em; }
+    .coaching-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; padding: 0; }
+    .coaching-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .coaching-card h2 { margin: 0 0 16px 0; font-size: 1.3em; color: var(--accent); }
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+    .stat-item { background: var(--muted-card); padding: 12px; border-radius: 8px; text-align: center; }
+    .stat-value { font-size: 1.8em; font-weight: 800; color: var(--accent); display: block; }
+    .stat-label { font-size: 0.85em; color: var(--muted-text); margin-top: 4px; display: block; }
+    .activity-card { background: var(--muted-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; }
+    .activity-card:hover { background: var(--card); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(76, 201, 240, 0.2); }
+    .activity-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+    .activity-title { font-size: 1.1em; font-weight: 800; color: var(--text); margin: 0; }
+    .activity-sport { display: inline-block; background: var(--accent); color: var(--bg); padding: 4px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; }
+    .activity-stats { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.9em; color: var(--muted-text); }
+    .activity-stat { display: flex; align-items: center; gap: 4px; }
+    .activity-stat-value { font-weight: 700; color: var(--text); }
+    .rpe-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; font-weight: 700; color: white; font-size: 0.9em; }
+    .rpe-badge.rpe-low { background: #22c55e; }
+    .rpe-badge.rpe-mid { background: #eab308; color: #1f1f1f; }
+    .rpe-badge.rpe-high { background: #ef4444; }
+    .rpe-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .rpe-chip { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 4px 10px; font-size: 0.85em; color: var(--text); }
+    .athlete-selector { background: var(--muted-card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 24px; }
+  </style>
+
+  <div class="coaching-header">
+    <h1>{{ t('Coaching') }}</h1>
+  </div>
+
+  <main class="container container--stack">
+    <div class="athlete-selector">
+      <h2 style="margin-top:0; font-size: 1.1em;">{{ t('Sélection d\'athlète') }}</h2>
+      {% if coach_athletes and coach_athletes|length %}
+        <div style="display:flex; gap: 10px; align-items:center; flex-wrap:wrap;">
+          <label for="athlete-select" class="muted">{{ t('Voir les données de') }}</label>
+          <select id="athlete-select" style="min-width: 220px;">
+            <option value="{{ viewing_user_id }}">{{ viewing_user_id }}</option>
+            {% for uid in coach_athletes %}
+              <option value="{{ uid }}" {% if uid == viewing_user_id %}selected{% endif %}>{{ uid }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn" type="button" id="switch-athlete">{{ t('Afficher') }}</button>
+        </div>
+      {% else %}
+        <div class="card card--muted">
+          <strong>{{ t('Aucun athlète lié') }}</strong>
+          <div class="muted">{{ t('Ajoute des athlètes depuis Communauté.') }}</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="coaching-grid">
+      <div class="coaching-card">
+        <h2>{{ t('Résumé hebdo') }}</h2>
+        <div class="muted">{{ week_summary.period_label }}</div>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-value">{{ week_summary.count }}</span>
+            <span class="stat-label">{{ t('Séances') }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ week_summary.time }}</span>
+            <span class="stat-label">{{ t('Temps') }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ week_summary.km }}</span>
+            <span class="stat-label">km</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ week_summary.load }}</span>
+            <span class="stat-label">{{ t('Charge') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="coaching-card" style="grid-column: span 2;">
+        <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <h2 style="margin:0;">{{ t('Dernières activités') }}</h2>
+          <a class="btn btn--ghost" href="{{ url_for('activity', user=viewing_user_id) }}">{{ t('Toutes les activités') }}</a>
+        </div>
+        {% if latest_acts and latest_acts|length %}
+          {% for a in latest_acts %}
+            {% set rpe_val = a.get('rpe') %}
+            {% set bg_style = '' %}
+            {% if rpe_val is not none %}
+              {% if rpe_val <= 3 %}
+                {% set bg_style = 'background: rgba(34, 197, 94, 0.08);' %}
+              {% elif rpe_val <= 6 %}
+                {% set bg_style = 'background: rgba(234, 179, 8, 0.08);' %}
+              {% else %}
+                {% set bg_style = 'background: rgba(239, 68, 68, 0.08);' %}
+              {% endif %}
+            {% else %}
+              {% set bg_style = 'background: rgba(255, 255, 255, 0.02);' %}
+            {% endif %}
+            <div class="activity-card" style="{{ bg_style }}">
+              <div class="activity-header">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                    {% if a.activity_id %}
+                      <a href="{{ url_for('activity_detail', activity_id=a.activity_id, user=viewing_user_id) }}" class="activity-title" style="text-decoration: none;">{{ a.name }}</a>
+                    {% else %}
+                      <span class="activity-title">{{ a.name }}</span>
+                    {% endif %}
+                    <span class="activity-sport">{{ a.sport }}</span>
+                  </div>
+                  <div class="muted" style="font-size: 0.9em;">{{ a.date }}</div>
+                </div>
+                {% set rpe_val = a.get('rpe') %}
+                {% if rpe_val is not none %}
+                  {% set rpe_class = 'rpe-high' if rpe_val > 6 else 'rpe-mid' if rpe_val > 3 else 'rpe-low' %}
+                  <div class="rpe-badge {{ rpe_class }}">
+                    RPE {{ '%.1f'|format(rpe_val) }}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="activity-stats">
+                {% if a.distance %}
+                  <div class="activity-stat">
+                    <span>📍</span>
+                    <span class="activity-stat-value">{{ a.distance }} km</span>
+                  </div>
+                {% endif %}
+                <div class="activity-stat">
+                  <span>⏱️</span>
+                  <span class="activity-stat-value">{{ a.duration }}</span>
+                </div>
+                {% if a.avg_hr %}
+                  <div class="activity-stat">
+                    <span>❤️</span>
+                    <span class="activity-stat-value">{{ a.avg_hr }} bpm</span>
+                  </div>
+                {% endif %}
+                {% if a.load %}
+                  <div class="activity-stat">
+                    <span>💪</span>
+                    <span class="activity-stat-value">{{ a.load }}</span>
+                    <span class="muted">charge</span>
+                  </div>
+                {% endif %}
+              </div>
+              {% set rpe_c = a.get('rpe_cardio') %}
+              {% set rpe_m = a.get('rpe_muscle') %}
+              {% set rpe_t = a.get('rpe_technique') %}
+              {% if rpe_c is not none or rpe_m is not none or rpe_t is not none %}
+                <div class="rpe-chips">
+                  {% if rpe_c is not none %}<span class="rpe-chip">Cardio {{ '%.1f'|format(rpe_c) }}</span>{% endif %}
+                  {% if rpe_m is not none %}<span class="rpe-chip">Muscle {{ '%.1f'|format(rpe_m) }}</span>{% endif %}
+                  {% if rpe_t is not none %}<span class="rpe-chip">Technique {{ '%.1f'|format(rpe_t) }}</span>{% endif %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="muted">{{ t('Aucune activité récente.') }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="height: 24px;"></div>
+
+    <section class="calendar-container" id="panel-calendar" role="tabpanel" aria-label="{{ t('Calendrier') }}">
+      <div class="calendar-navigation">
+        <button id="prev-month">◀</button>
+        <span id="month-year"></span>
+        <button id="next-month">▶</button>
+      </div>
+      <table class="calendar-table">
+        <thead>
+          <tr>
+            <th>{{ t('Lun') }}</th>
+            <th>{{ t('Mar') }}</th>
+            <th>{{ t('Mer') }}</th>
+            <th>{{ t('Jeu') }}</th>
+            <th>{{ t('Ven') }}</th>
+            <th>{{ t('Sam') }}</th>
+            <th>{{ t('Dim') }}</th>
+          </tr>
+        </thead>
+        <tbody id="calendar-body"></tbody>
+      </table>
+    </section>
+
+    <section class="planner" id="panel-planner" role="tabpanel" aria-label="{{ t('Planificateur') }}" hidden>
+      <div class="planner-grid">
+        <div class="planner-card">
+          <h2>{{ t('Entraînement') }}</h2>
+          <form id="training-form" class="planner-form" onsubmit="return false;">
+            <div class="planner-form__grid">
+              <div class="field" style="margin:0; grid-column: 1 / -1;">
+                <label for="training-title">{{ t('Titre') }}</label>
+                <input type="text" id="training-title" placeholder="Ex: Fractionné 10x400" required>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="training-date">{{ t('Date') }}</label>
+                <input type="date" id="training-date" required>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="training-sport">{{ t('Sport') }}</label>
+                <select id="training-sport" required>
+                  <option value="running" selected>Course à pied</option>
+                  <option value="cycling">Vélo</option>
+                  <option value="swimming">Natation</option>
+                  <option value="strength_training">Musculation</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="training-distance">{{ t('Distance (km)') }}</label>
+                <input type="number" id="training-distance" placeholder="Optionnel" step="0.1">
+              </div>
+              <div class="field" style="margin:0; grid-column: 1 / -1;">
+                <label for="training-description">{{ t('Description courte') }}</label>
+                <input type="text" id="training-description" placeholder="Optionnel">
+              </div>
+              <div class="field" style="margin:0; grid-column: 1 / -1;">
+                <label for="training-content">{{ t('Contenu') }}</label>
+                <textarea id="training-content" class="planner-textarea planner-textarea--content" rows="6" placeholder="Optionnel"></textarea>
+              </div>
+              <div class="field" style="margin:0; grid-column: 1 / -1;">
+                <label for="training-notes">{{ t('Remarques') }}</label>
+                <textarea id="training-notes" class="planner-textarea" rows="3" placeholder="Optionnel"></textarea>
+              </div>
+            </div>
+            <div class="planner-actions">
+              <button class="btn" type="button" id="add-training">{{ t('Ajouter') }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="planner-card">
+          <h2>{{ t('Compétition') }}</h2>
+          <form id="competition-form" class="planner-form" onsubmit="return false;">
+            <div class="planner-form__grid">
+              <div class="field" style="margin:0;">
+                <label for="competition-name">{{ t('Nom') }}</label>
+                <input type="text" id="competition-name" placeholder="Ex: Semi-marathon" required>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="competition-date">{{ t('Date') }}</label>
+                <input type="date" id="competition-date" required>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="competition-sport">{{ t('Sport') }}</label>
+                <select id="competition-sport" required>
+                  <option value="running" selected>Course à pied</option>
+                  <option value="cycling">Vélo</option>
+                  <option value="swimming">Natation</option>
+                  <option value="strength_training">Musculation</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="competition-distance">{{ t('Distance (km)') }}</label>
+                <input type="number" id="competition-distance" placeholder="Optionnel" step="0.1">
+              </div>
+            </div>
+            <div class="planner-actions">
+              <button class="btn btn--pink" type="button" id="add-competition">{{ t('Ajouter') }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="planner-card">
+          <h2>{{ t('Prochains entraînements') }}</h2>
+          <ul id="training-list"></ul>
+          <div class="muted" id="training-list-meta" style="margin-top: 6px;"></div>
+        </div>
+
+        <div class="planner-card">
+          <h2>{{ t('Prochaines compétitions') }}</h2>
+          <ul id="competition-list"></ul>
+          <div class="muted" id="competition-list-meta" style="margin-top: 6px;"></div>
+        </div>
+      </div>
+    </section>
+    <div id="tooltip" class="tooltip"></div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const viewingUserId = "{{ (viewing_user_id or '') }}";
+      const lang = "{{ (lang or 'fr') }}";
+      let trainings = JSON.parse('{{ trainings|tojson|safe }}');
+      let competitions = JSON.parse('{{ competitions|tojson|safe }}');
+
+      const calendarEventsUrl = "{{ url_for('api_calendar_events') }}";
+      const activityAsTrainingUrl = "{{ url_for('api_activity_as_training') }}";
+      const calendarBody = document.getElementById("calendar-body");
+      const monthYearDisplay = document.getElementById("month-year");
+      const tooltip = document.getElementById("tooltip");
+
+      const tabCalendar = document.getElementById('tab-calendar');
+      const tabPlanner = document.getElementById('tab-planner');
+      const panelCalendar = document.getElementById('panel-calendar');
+      const panelPlanner = document.getElementById('panel-planner');
+
+      const trainingDetailBaseUrl = "{{ url_for('training_detail', training_id='__ID__') }}";
+      const competitionDetailBaseUrl = "{{ url_for('competition_detail', competition_id='__ID__') }}";
+      const activityDetailBaseUrl = "{{ url_for('activity_detail', activity_id=0) }}";
+
+      const withUserParam = (url) => {
+        if (!viewingUserId) return url;
+        const sep = url.includes('?') ? '&' : '?';
+        return `${url}${sep}user=${encodeURIComponent(viewingUserId)}`;
+      };
+
+      const setActiveTab = (tab) => {
+        const isCalendar = tab === 'calendar';
+        tabCalendar.classList.toggle('is-active', isCalendar);
+        tabPlanner.classList.toggle('is-active', !isCalendar);
+        tabCalendar.setAttribute('aria-selected', isCalendar ? 'true' : 'false');
+        tabPlanner.setAttribute('aria-selected', !isCalendar ? 'true' : 'false');
+        panelCalendar.hidden = !isCalendar;
+        panelPlanner.hidden = isCalendar;
+      };
+      tabCalendar.addEventListener('click', () => setActiveTab('calendar'));
+      tabPlanner.addEventListener('click', () => setActiveTab('planner'));
+
+      const activityUrl = (activityId) => {
+        const id = Number(activityId);
+        if (!Number.isFinite(id)) return null;
+        return withUserParam(activityDetailBaseUrl.replace(/\/0$/, `/${encodeURIComponent(String(id))}`));
+      };
+
+      let currentDate = new Date();
+      let monthTrainings = [];
+      let monthCompetitions = [];
+      let monthActivities = [];
+      let eventsByDate = new Map();
+
+      const indexMonthEvents = () => {
+        eventsByDate = new Map();
+        const add = (ev) => {
+          if (!ev || !ev.date) return;
+          const key = String(ev.date);
+          if (!eventsByDate.has(key)) eventsByDate.set(key, []);
+          eventsByDate.get(key).push(ev);
+        };
+        monthActivities.forEach((a) => add({ type: 'activity', ...a }));
+        monthTrainings.forEach((t) => add({ type: 'training', ...t }));
+        monthCompetitions.forEach((c) => add({ type: 'competition', ...c }));
+      };
+
+      const loadMonthEvents = async () => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1;
+        const url = `${calendarEventsUrl}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${viewingUserId ? `&user=${encodeURIComponent(viewingUserId)}` : ''}`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error(`calendar_events ${res.status}`);
+        const data = await res.json();
+        monthTrainings = Array.isArray(data.trainings) ? data.trainings : [];
+        monthCompetitions = Array.isArray(data.competitions) ? data.competitions : [];
+        monthActivities = Array.isArray(data.activities) ? data.activities : [];
+        indexMonthEvents();
+      };
+
+      const renderList = () => {
+        const competitionList = document.getElementById("competition-list");
+        const trainingList = document.getElementById("training-list");
+        const trainingMeta = document.getElementById('training-list-meta');
+        const competitionMeta = document.getElementById('competition-list-meta');
+
+        const parseDate = (s) => {
+          const v = String(s || '');
+          if (!v) return null;
+          const d = new Date(`${v}T00:00:00`);
+          return Number.isFinite(d.getTime()) ? d : null;
+        };
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const sortAsc = (a, b) => String(a.date || '').localeCompare(String(b.date || ''));
+        const upcomingTrainings = trainings.filter(t => parseDate(t.date) && parseDate(t.date) >= today).sort(sortAsc);
+        const upcomingCompetitions = competitions.filter(c => parseDate(c.date) && parseDate(c.date) >= today).sort(sortAsc);
+
+        const shownTrainings = upcomingTrainings.slice(0, 10);
+        const shownCompetitions = upcomingCompetitions.slice(0, 10);
+
+        competitionList.innerHTML = (shownCompetitions.length ? shownCompetitions : [null]).map(competition => competition ? `
+          <li>
+            <div>
+              <strong><a href="${withUserParam(competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(competition.id)))}">${competition.name}</a></strong>
+              <p>Date: ${competition.date} | Sport: ${competition.sport} | Distance: ${competition.distance || 'N/A'} km</p>
+            </div>
+            <button class="delete-button" onclick="deleteCompetition('${(competition.id || competition.name).toString().replace(/'/g, "\\'")}')">${lang === 'en' ? 'Delete' : 'Supprimer'}</button>
+          </li>
+        ` : `<li class="muted">${lang === 'en' ? 'No upcoming competitions' : 'Aucune compétition à venir'}</li>`).join("");
+
+        trainingList.innerHTML = (shownTrainings.length ? shownTrainings : [null]).map(training => training ? `
+          <li>
+            <div>
+              <strong><a href="${withUserParam(trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(training.id)))}">${training.title}</a></strong>
+              <p>Date: ${training.date} | Sport: ${training.sport} | Distance: ${(training.distance_km ?? 'N/A')} km</p>
+            </div>
+            <button class="delete-button" onclick="deleteTraining('${(training.id || training.title).toString().replace(/'/g, "\\'")}')">${lang === 'en' ? 'Delete' : 'Supprimer'}</button>
+          </li>
+        ` : `<li class="muted">${lang === 'en' ? 'No planned training' : 'Aucun entraînement planifié'}</li>`).join("");
+
+        if (trainingMeta) {
+          trainingMeta.textContent = upcomingTrainings.length > 10
+            ? `${lang === 'en' ? 'Showing' : 'Affiché'} ${shownTrainings.length} / ${upcomingTrainings.length} ${lang === 'en' ? '(more in calendar)' : '(le reste est dans le calendrier)'}`
+            : '';
+        }
+        if (competitionMeta) {
+          competitionMeta.textContent = upcomingCompetitions.length > 10
+            ? `${lang === 'en' ? 'Showing' : 'Affiché'} ${shownCompetitions.length} / ${upcomingCompetitions.length} ${lang === 'en' ? '(more in calendar)' : '(le reste est dans le calendrier)'}`
+            : '';
+        }
+      };
+
+      window.deleteCompetition = (name) => {
+        window.location.href = withUserParam(`{{ url_for('remove_competition', competition_id='__ID__') }}`.replace('__ID__', encodeURIComponent(name)));
+      };
+      window.deleteTraining = (name) => {
+        window.location.href = withUserParam(`{{ url_for('remove_training', training_id='__ID__') }}`.replace('__ID__', encodeURIComponent(name)));
+      };
+
+      const addItem = (type) => {
+        const form = new FormData();
+        if (type === 'training') {
+          const title = document.getElementById('training-title').value.trim();
+          const date = document.getElementById('training-date').value.trim();
+          const sport = document.getElementById('training-sport').value.trim();
+          const distance = document.getElementById('training-distance').value;
+          const description = document.getElementById('training-description').value.trim();
+          const content = document.getElementById('training-content').value.trim();
+          const notes = document.getElementById('training-notes').value.trim();
+          if (!title || !date || !sport) return;
+          form.append('title', title);
+          form.append('date', date);
+          form.append('sport', sport);
+          if (viewingUserId) form.append('user_id', viewingUserId);
+          if (distance) form.append('distance', distance);
+          if (description) form.append('description', description);
+          if (content) form.append('content', content);
+          if (notes) form.append('notes', notes);
+        } else {
+          const name = document.getElementById('competition-name').value.trim();
+          const date = document.getElementById('competition-date').value.trim();
+          const sport = document.getElementById('competition-sport').value.trim();
+          const distance = document.getElementById('competition-distance').value;
+          if (!name || !date || !sport) return;
+          form.append('name', name);
+          form.append('date', date);
+          form.append('sport', sport);
+          if (viewingUserId) form.append('user_id', viewingUserId);
+          if (distance) form.append('distance', distance);
+          form.append('location', '');
+        }
+        fetch(type === 'training' ? "{{ url_for('add_training') }}" : "{{ url_for('add_competition') }}", {
+          method: 'POST',
+          body: form
+        }).then(() => {
+          const url = withUserParam(window.location.pathname);
+          window.location.href = url;
+        });
+      };
+      document.getElementById('add-training').addEventListener('click', () => addItem('training'));
+      document.getElementById('add-competition').addEventListener('click', () => addItem('competition'));
+
+      const renderCalendar = () => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const monthNamesFr = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthNames = (lang || 'fr').startsWith('en') ? monthNamesEn : monthNamesFr;
+        monthYearDisplay.textContent = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1);
+        const firstWeekday = (firstDay.getDay() + 6) % 7; // Monday=0
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const weeks = Math.ceil((firstWeekday + daysInMonth) / 7);
+
+        calendarBody.innerHTML = '';
+        let day = 1;
+        for (let w = 0; w < weeks; w++) {
+          const tr = document.createElement('tr');
+          for (let d = 0; d < 7; d++) {
+            const td = document.createElement('td');
+            if (w === 0 && d < firstWeekday || day > daysInMonth) {
+              td.innerHTML = '&nbsp;';
+            } else {
+              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              td.innerHTML = `<div class="cal-day">${day}</div>`;
+              const events = eventsByDate.get(dateStr) || [];
+              const items = events.slice(0, 3);
+              items.forEach(ev => {
+                const el = document.createElement('div');
+                el.className = `cal-item cal-item--${ev.type}`;
+                if (ev.type === 'activity') {
+                  const url = activityUrl(ev.activity_id);
+                  el.innerHTML = url ? `<a href="${url}">${ev.name || 'Activité'}</a>` : (ev.name || 'Activité');
+                } else if (ev.type === 'training') {
+                  el.innerHTML = `<a href="${withUserParam(trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(ev.id)))}">${ev.title || 'Séance'}</a>`;
+                } else if (ev.type === 'competition') {
+                  el.innerHTML = `<a href="${withUserParam(competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(ev.id)))}">${ev.name || 'Compétition'}</a>`;
+                }
+                td.appendChild(el);
+              });
+              td.addEventListener('mouseenter', (e) => {
+                const evs = eventsByDate.get(dateStr) || [];
+                if (!evs.length) return;
+                tooltip.innerHTML = evs.map(ev => {
+                  if (ev.type === 'activity') return `${ev.name || 'Activité'} — ${ev.distance || 'N/A'} km`;
+                  if (ev.type === 'training') return `${ev.title || 'Séance'} — ${ev.distance_km ?? 'N/A'} km`;
+                  if (ev.type === 'competition') return `${ev.name || 'Compétition'} — ${ev.distance || 'N/A'} km`;
+                  return '';
+                }).join('<br>');
+                tooltip.style.display = 'block';
+                const rect = e.target.getBoundingClientRect();
+                tooltip.style.left = `${rect.left + window.scrollX + 10}px`;
+                tooltip.style.top = `${rect.bottom + window.scrollY + 10}px`;
+              });
+              td.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+              day++;
+            }
+            tr.appendChild(td);
+          }
+          calendarBody.appendChild(tr);
+        }
+      };
+
+      const refresh = async () => {
+        await loadMonthEvents();
+        renderCalendar();
+        renderList();
+      };
+
+      document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); refresh(); });
+      document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); refresh(); });
+
+      refresh();
+
+      const switchBtn = document.getElementById('switch-athlete');
+      const athleteSelect = document.getElementById('athlete-select');
+      if (switchBtn && athleteSelect) {
+        switchBtn.addEventListener('click', () => {
+          const uid = athleteSelect.value;
+          const url = new URL(window.location.href);
+          url.searchParams.set('user', uid);
+          window.location.href = url.toString();
+        });
+      }
+    });
+  </script>
+{% endblock %}

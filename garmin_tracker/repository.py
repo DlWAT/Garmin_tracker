@@ -77,3 +77,16 @@ class JsonRepository:
         write_json(path, profile)
         with self._lock:
             self._cache.pop(f"profile:{user_id}", None)
+
+    def activity_metadata(self, user_id: str) -> dict[str, Any]:
+        """Load activity metadata (RPE, notes, etc.) keyed by activity_id."""
+        path = os.path.join(self._data_dir, f"{user_id}_activity_metadata.json")
+        data = self._get_cached(f"activity_metadata:{user_id}", path, {})
+        return data if isinstance(data, dict) else {}
+
+    def save_activity_metadata(self, user_id: str, metadata: dict[str, Any]) -> None:
+        """Save activity metadata."""
+        path = os.path.join(self._data_dir, f"{user_id}_activity_metadata.json")
+        write_json(path, metadata)
+        with self._lock:
+            self._cache.pop(f"activity_metadata:{user_id}", None)

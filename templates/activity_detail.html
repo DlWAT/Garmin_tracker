@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Activité - Garmin Tracker{% endblock %}
+{% block title %}{{ t('Activité') }} - Garmin Tracker{% endblock %}
 
 {% block head_extra %}
   <link rel="stylesheet" href="{{ url_for('static', filename='activity.css') }}">
@@ -16,38 +16,38 @@
       <h1 style="margin: 0;">{{ title }}</h1>
       <div class="muted">{{ subtitle }}</div>
     </div>
-    <button class="btn" onclick="window.location.href='{{ url_for('activity') }}'">Retour</button>
+    <button class="btn" onclick="window.location.href='{{ url_for('activity') }}'">{{ t('Retour') }}</button>
   </div>
 
   <div class="detail-grid">
-    <section class="card" aria-label="Résumé">
-      <h2 style="margin-top: 0;">Résumé</h2>
+    <section class="card" aria-label="{{ t('Résumé') }}">
+      <h2 style="margin-top: 0;">{{ t('Résumé') }}</h2>
       <div class="activity-kv">
-        <div class="activity-kv__row"><span class="muted">Sport</span><span>{{ sport_label }}</span></div>
-        <div class="activity-kv__row"><span class="muted">Date</span><span>{{ summary.get('startTimeLocal') or summary.get('startTimeGMT') or '—' }}</span></div>
-        <div class="activity-kv__row"><span class="muted">Distance</span><span>{{ distance_km }} km</span></div>
-        <div class="activity-kv__row"><span class="muted">Durée</span><span>{{ duration_hm }}</span></div>
-        <div class="activity-kv__row"><span class="muted">Allure</span><span>{{ pace }}</span></div>
-        <div class="activity-kv__row"><span class="muted">FC moyenne</span><span>{{ avg_hr }}</span></div>
-        <div class="activity-kv__row"><span class="muted">FC max</span><span>{{ max_hr }}</span></div>
-        <div class="activity-kv__row"><span class="muted">Calories</span><span>{{ calories }}</span></div>
-        <div class="activity-kv__row"><span class="muted">D+ / D-</span><span>{{ elev_gain }} / {{ elev_loss }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Sport') }}</span><span>{{ sport_label }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Date') }}</span><span>{{ summary.get('startTimeLocal') or summary.get('startTimeGMT') or '—' }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Distance') }}</span><span>{{ distance_km }} km</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Durée') }}</span><span>{{ duration_hm }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Allure') }}</span><span>{{ pace }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('FC moyenne') }}</span><span>{{ avg_hr }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('FC max') }}</span><span>{{ max_hr }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Calories') }}</span><span>{{ calories }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('D+ / D-') }}</span><span>{{ elev_gain }} / {{ elev_loss }}</span></div>
       </div>
     </section>
 
-    <section class="card" aria-label="Qualité des données">
-      <h2 style="margin-top: 0;">Données</h2>
+    <section class="card" aria-label="{{ t('Qualité des données') }}">
+      <h2 style="margin-top: 0;">{{ t('Données') }}</h2>
       <div class="activity-kv">
-        <div class="activity-kv__row"><span class="muted">GPS</span><span>{{ 'Oui' if has_gps else 'Non / inconnu' }}</span></div>
-        <div class="activity-kv__row"><span class="muted">Points</span><span>{{ points_count if points_count is not none else '—' }}</span></div>
-        <div class="activity-kv__row"><span class="muted">Mesures</span><span>{{ metric_keys|length }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('GPS') }}</span><span>{{ t('Oui') if has_gps else t('Non / inconnu') }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Points') }}</span><span>{{ points_count if points_count is not none else '—' }}</span></div>
+        <div class="activity-kv__row"><span class="muted">{{ t('Mesures') }}</span><span>{{ metric_keys|length }}</span></div>
       </div>
 
       {% if metric_keys %}
         <div style="height: 10px;"></div>
         <details class="activity-disclosure">
           <summary class="activity-disclosure__summary">
-            <span style="font-weight: 800;">Mesures disponibles</span>
+            <span style="font-weight: 800;">{{ t('Mesures disponibles') }}</span>
             <span class="muted">({{ metric_keys|length }})</span>
           </summary>
           <div style="height: 10px;"></div>
@@ -63,27 +63,27 @@
 
   <div style="height: 16px;"></div>
 
-  <section class="card" aria-label="Planifier">
-    <h2 style="margin-top: 0;">Planifier</h2>
-    <div class="muted">Créer un entraînement planifié à partir de cette activité.</div>
+  <section class="card" aria-label="{{ t('Planifier') }}">
+    <h2 style="margin-top: 0;">{{ t('Planifier') }}</h2>
+    <div class="muted">{{ t('Créer un entraînement planifié à partir de cette activité.') }}</div>
     <div style="height: 10px;"></div>
-    <a class="btn btn--pink" href="{{ url_for('training') }}?copy_activity_id={{ activity_id }}">Planifier à partir de cette séance</a>
+    <a class="btn btn--pink" href="{{ url_for('training') }}?copy_activity_id={{ activity_id }}">{{ t('Planifier à partir de cette séance') }}</a>
   </section>
 
   {% if planned %}
-    <section class="card" aria-label="Entraînement planifié">
-      <h2 style="margin-top: 0;">Entraînement planifié</h2>
-      <div class="muted">Séance programmée le même jour pour ce sport.</div>
+    <section class="card" aria-label="{{ t('Entraînement planifié') }}">
+      <h2 style="margin-top: 0;">{{ t('Entraînement planifié') }}</h2>
+      <div class="muted">{{ t('Séance programmée le même jour pour ce sport.') }}</div>
       <div style="height: 10px;"></div>
       <div>
         <strong style="color: var(--text);">{{ planned.title }}</strong>
         {% if planned.id %}
-          <span class="muted">• <a href="{{ url_for('training_detail', training_id=planned.id) }}">Voir la fiche</a></span>
+          <span class="muted">• <a href="{{ url_for('training_detail', training_id=planned.id) }}">{{ t('Voir la fiche') }}</a></span>
         {% endif %}
       </div>
       {% if planned.notes %}
         <div class="muted" style="margin-top: 6px;">
-          {% if planned.notes %}<div style="margin-top: 6px;"><b>Remarques</b>: {{ planned.notes }}</div>{% endif %}
+          {% if planned.notes %}<div style="margin-top: 6px;"><b>{{ t('Remarques') }}</b>: {{ planned.notes }}</div>{% endif %}
         </div>
       {% endif %}
       {% if planned.description %}
@@ -98,9 +98,9 @@
   {% endif %}
 
   {% if graph_urls %}
-    <section class="card" aria-label="Graphiques">
-      <h2 style="margin-top: 0;">Graphiques</h2>
-      <div class="muted">Courbes calculées depuis les métriques de l'activité.</div>
+    <section class="card" aria-label="{{ t('Graphiques') }}">
+      <h2 style="margin-top: 0;">{{ t('Graphiques') }}</h2>
+      <div class="muted">{{ t('Courbes calculées depuis les métriques de l\'activité.') }}</div>
       <div style="height: 10px;"></div>
       <section class="graph-grid">
         {% for src in graph_urls %}
@@ -113,9 +113,9 @@
   {% endif %}
 
   {% if map_polyline %}
-    <section class="card" aria-label="Carte">
-      <h2 style="margin-top: 0;">Carte</h2>
-      <div class="muted">Trace GPS (si disponible).</div>
+    <section class="card" aria-label="{{ t('Carte') }}">
+      <h2 style="margin-top: 0;">{{ t('Carte') }}</h2>
+      <div class="muted">{{ t('Trace GPS (si disponible).') }}</div>
       <div style="height: 10px;"></div>
       <div id="activity-map" class="activity-map"></div>
     </section>
@@ -174,14 +174,173 @@
     <div style="height: 16px;"></div>
   {% endif %}
 
+  {% if user_id and viewing_user_id and user_id == viewing_user_id %}
+    <section class="card" aria-label="{{ t('RPE') }}">
+      <h2 style="margin-top: 0;">{{ t('Retour d\'activité') }} (RPE)</h2>
+      
+      {% if activity_meta.get('rpe') is not none or activity_meta.get('rpe_cardio') is not none or activity_meta.get('rpe_muscle') is not none or activity_meta.get('rpe_technique') is not none %}
+        <div class="activity-kv" style="margin-bottom: 16px;">
+          {% if activity_meta.get('rpe') is not none %}<div class="activity-kv__row"><span class="muted">{{ t('RPE global') }}</span><span>{{ '%.1f'|format(activity_meta.get('rpe')) }}</span></div>{% endif %}
+          {% if activity_meta.get('rpe_cardio') is not none %}<div class="activity-kv__row"><span class="muted">{{ t('RPE cardio') }}</span><span>{{ '%.1f'|format(activity_meta.get('rpe_cardio')) }}</span></div>{% endif %}
+          {% if activity_meta.get('rpe_muscle') is not none %}<div class="activity-kv__row"><span class="muted">{{ t('RPE musculaire') }}</span><span>{{ '%.1f'|format(activity_meta.get('rpe_muscle')) }}</span></div>{% endif %}
+          {% if activity_meta.get('rpe_technique') is not none %}<div class="activity-kv__row"><span class="muted">{{ t('RPE technique') }}</span><span>{{ '%.1f'|format(activity_meta.get('rpe_technique')) }}</span></div>{% endif %}
+        </div>
+      {% endif %}
+
+      {% if activity_meta.get('notes') %}
+        <p style="margin: 0 0 16px 0; color: var(--text);"><b>{{ t('Remarques') }}</b>: {{ activity_meta.get('notes') }}</p>
+      {% endif %}
+
+      <style>
+        .rpe-slider-container { margin-bottom: 20px; }
+        .rpe-slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .rpe-slider-value { font-weight: 800; font-size: 1.2em; color: var(--accent); min-width: 40px; text-align: right; }
+        .rpe-slider { width: 100%; height: 12px; border-radius: 6px; outline: none; -webkit-appearance: none; appearance: none; background: linear-gradient(to right, #22c55e 0%, #22c55e 30%, #eab308 50%, #ef4444 70%, #dc2626 100%); }
+        .rpe-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: white; border: 3px solid var(--accent); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .rpe-slider::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: white; border: 3px solid var(--accent); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .rpe-hint { font-size: 0.85em; color: var(--muted-text); margin-top: 4px; min-height: 1.2em; }
+        .rpe-legend { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--muted-text); margin-top: 6px; }
+      </style>
+
+      <form method="post" action="{{ url_for('activity_feedback', activity_id=activity_id) }}">
+        <div class="rpe-slider-container">
+          <div class="rpe-slider-header">
+            <label for="rpe">{{ t('RPE global') }}</label>
+            <span class="rpe-slider-value" id="rpe-value">{{ activity_meta.get('rpe') if activity_meta.get('rpe') is not none else 5 }}</span>
+          </div>
+          <input id="rpe" name="rpe" type="range" min="0" max="10" step="0.5" value="{{ activity_meta.get('rpe') if activity_meta.get('rpe') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-value').textContent=this.value; updateRpeHint('rpe-hint', this.value)" />
+          <div class="rpe-hint" id="rpe-hint"></div>
+          <div class="rpe-legend"><span>0: {{ t('Repos') }}</span><span>5: {{ t('Modéré') }}</span><span>10: {{ t('Maximum') }}</span></div>
+        </div>
+
+        <div style="display:flex; gap: 16px; flex-wrap: wrap;">
+          <div style="flex:1; min-width: 200px;">
+            <div class="rpe-slider-container">
+              <div class="rpe-slider-header">
+                <label for="rpe_cardio">{{ t('RPE cardio') }}</label>
+                <span class="rpe-slider-value" id="rpe-cardio-value">{{ activity_meta.get('rpe_cardio') if activity_meta.get('rpe_cardio') is not none else 5 }}</span>
+              </div>
+              <input id="rpe_cardio" name="rpe_cardio" type="range" min="0" max="10" step="0.5" value="{{ activity_meta.get('rpe_cardio') if activity_meta.get('rpe_cardio') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-cardio-value').textContent=this.value; updateRpeHint('rpe-cardio-hint', this.value, 'cardio')" />
+              <div class="rpe-hint" id="rpe-cardio-hint"></div>
+            </div>
+          </div>
+          <div style="flex:1; min-width: 200px;">
+            <div class="rpe-slider-container">
+              <div class="rpe-slider-header">
+                <label for="rpe_muscle">{{ t('RPE musculaire') }}</label>
+                <span class="rpe-slider-value" id="rpe-muscle-value">{{ activity_meta.get('rpe_muscle') if activity_meta.get('rpe_muscle') is not none else 5 }}</span>
+              </div>
+              <input id="rpe_muscle" name="rpe_muscle" type="range" min="0" max="10" step="0.5" value="{{ activity_meta.get('rpe_muscle') if activity_meta.get('rpe_muscle') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-muscle-value').textContent=this.value; updateRpeHint('rpe-muscle-hint', this.value, 'muscle')" />
+              <div class="rpe-hint" id="rpe-muscle-hint"></div>
+            </div>
+          </div>
+          <div style="flex:1; min-width: 200px;">
+            <div class="rpe-slider-container">
+              <div class="rpe-slider-header">
+                <label for="rpe_technique">{{ t('RPE technique') }}</label>
+                <span class="rpe-slider-value" id="rpe-technique-value">{{ activity_meta.get('rpe_technique') if activity_meta.get('rpe_technique') is not none else 5 }}</span>
+              </div>
+              <input id="rpe_technique" name="rpe_technique" type="range" min="0" max="10" step="0.5" value="{{ activity_meta.get('rpe_technique') if activity_meta.get('rpe_technique') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-technique-value').textContent=this.value; updateRpeHint('rpe-technique-hint', this.value, 'technique')" />
+              <div class="rpe-hint" id="rpe-technique-hint"></div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          function updateRpeHint(id, value, type) {
+            const v = parseFloat(value);
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            const hints = {
+              general: {
+                0: "{{ t('Aucun effort') }}",
+                1: "{{ t('Très facile') }}",
+                2: "{{ t('Facile') }}",
+                3: "{{ t('Léger') }}",
+                4: "{{ t('Un peu difficile') }}",
+                5: "{{ t('Moyennement difficile') }}",
+                6: "{{ t('Difficile') }}",
+                7: "{{ t('Très difficile') }}",
+                8: "{{ t('Extrêmement difficile') }}",
+                9: "{{ t('Presque maximum') }}",
+                10: "{{ t('Effort maximum') }}"
+              },
+              cardio: {
+                0: "{{ t('Repos complet') }}",
+                1: "{{ t('Conversation facile') }}",
+                2: "{{ t('Respiration calme') }}",
+                3: "{{ t('Léger essoufflement') }}",
+                4: "{{ t('Respiration plus profonde') }}",
+                5: "{{ t('Conversation difficile') }}",
+                6: "{{ t('Essoufflement marqué') }}",
+                7: "{{ t('Respiration très laborieuse') }}",
+                8: "{{ t('Haletant') }}",
+                9: "{{ t('À bout de souffle') }}",
+                10: "{{ t('Limite cardiovasculaire') }}"
+              },
+              muscle: {
+                0: "{{ t('Aucune fatigue') }}",
+                1: "{{ t('Muscles frais') }}",
+                2: "{{ t('Légère sensation') }}",
+                3: "{{ t('Muscles sollicités') }}",
+                4: "{{ t('Début de fatigue') }}",
+                5: "{{ t('Fatigue modérée') }}",
+                6: "{{ t('Muscles fatigués') }}",
+                7: "{{ t('Fatigue importante') }}",
+                8: "{{ t('Muscles très fatigués') }}",
+                9: "{{ t('Épuisement musculaire') }}",
+                10: "{{ t('Limite musculaire') }}"
+              },
+              technique: {
+                0: "{{ t('Aucune difficulté') }}",
+                1: "{{ t('Très fluide') }}",
+                2: "{{ t('Bonne aisance') }}",
+                3: "{{ t('Quelques imprécisions') }}",
+                4: "{{ t('Technique correcte') }}",
+                5: "{{ t('Erreurs occasionnelles') }}",
+                6: "{{ t('Technique dégradée') }}",
+                7: "{{ t('Difficultés marquées') }}",
+                8: "{{ t('Technique très dégradée') }}",
+                9: "{{ t('Gestes désordonnés') }}",
+                10: "{{ t('Perte de coordination') }}"
+              }
+            };
+            
+            const selected = type ? hints[type] : hints.general;
+            const rounded = Math.round(v);
+            el.textContent = selected[rounded] || '';
+          }
+          
+          // Initialize hints on page load
+          document.addEventListener('DOMContentLoaded', function() {
+            updateRpeHint('rpe-hint', document.getElementById('rpe').value);
+            updateRpeHint('rpe-cardio-hint', document.getElementById('rpe_cardio').value, 'cardio');
+            updateRpeHint('rpe-muscle-hint', document.getElementById('rpe_muscle').value, 'muscle');
+            updateRpeHint('rpe-technique-hint', document.getElementById('rpe_technique').value, 'technique');
+          });
+        </script>
+
+        <div class="field">
+          <label for="notes">{{ t('Remarques') }}</label>
+          <textarea id="notes" name="notes" rows="3" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); resize: vertical;">{{ activity_meta.get('notes') or '' }}</textarea>
+        </div>
+
+        <button class="btn btn--pink" type="submit">{{ t('Enregistrer') }}</button>
+      </form>
+    </section>
+
+    <div style="height: 16px;"></div>
+  {% endif %}
+
   <section class="card" aria-label="Détails">
     <h2 style="margin-top: 0;">Détails</h2>
     {% if details_bundle %}
       {% if training_items %}
         <details class="activity-disclosure" open>
           <summary class="activity-disclosure__summary">
-            <span style="font-weight: 800;">Entraînement</span>
-            <span class="muted">(effets, charge…)</span>
+            <span style="font-weight: 800;">{{ t('Entraînement') }}</span>
+            <span class="muted">({{ t('effets, charge…') }})</span>
           </summary>
           <div style="height: 10px;"></div>
           <div class="activity-kv">
@@ -196,8 +355,8 @@
       {% if hr_zones_rows %}
         <details class="activity-disclosure" open>
           <summary class="activity-disclosure__summary">
-            <span style="font-weight: 800;">Zones de fréquence cardiaque</span>
-            <span class="muted">(temps passé)</span>
+            <span style="font-weight: 800;">{{ t('Zones de fréquence cardiaque') }}</span>
+            <span class="muted">({{ t('temps passé') }})</span>
           </summary>
           <div style="height: 10px;"></div>
           <div class="zones">
@@ -220,7 +379,7 @@
       {% if laps_rows %}
         <details class="activity-disclosure" open>
           <summary class="activity-disclosure__summary">
-            <span style="font-weight: 800;">Tours (laps)</span>
+            <span style="font-weight: 800;">{{ t('Tours (laps)') }}</span>
             <span class="muted">({{ laps_rows|length }})</span>
           </summary>
           <div style="height: 10px;"></div>
@@ -229,14 +388,14 @@
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Distance</th>
-                  <th>Durée</th>
-                  <th>Allure</th>
-                  <th>Vitesse</th>
-                  <th>FC moy.</th>
-                  <th>FC max</th>
-                  <th>Cadence</th>
-                  <th>PWR</th>
+                  <th>{{ t('Distance') }}</th>
+                  <th>{{ t('Durée') }}</th>
+                  <th>{{ t('Allure') }}</th>
+                  <th>{{ t('Vitesse') }}</th>
+                  <th>{{ t('FC moy.') }}</th>
+                  <th>{{ t('FC max') }}</th>
+                  <th>{{ t('Cadence') }}</th>
+                  <th>{{ t('PWR') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -263,7 +422,7 @@
       {% if typed_splits_rows %}
         <details class="activity-disclosure">
           <summary class="activity-disclosure__summary">
-            <span style="font-weight: 800;">Splits Garmin</span>
+            <span style="font-weight: 800;">{{ t('Splits Garmin') }}</span>
             <span class="muted">({{ typed_splits_rows|length }})</span>
           </summary>
           <div style="height: 10px;"></div>
@@ -271,16 +430,16 @@
             <table class="table">
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Distance</th>
-                  <th>Durée</th>
-                  <th>Allure</th>
-                  <th>Vitesse</th>
-                  <th>FC moy.</th>
-                  <th>FC max</th>
-                  <th>Cadence</th>
-                  <th>PWR</th>
-                  <th>kcal</th>
+                  <th>{{ t('Type') }}</th>
+                  <th>{{ t('Distance') }}</th>
+                  <th>{{ t('Durée') }}</th>
+                  <th>{{ t('Allure') }}</th>
+                  <th>{{ t('Vitesse') }}</th>
+                  <th>{{ t('FC moy.') }}</th>
+                  <th>{{ t('FC max') }}</th>
+                  <th>{{ t('Cadence') }}</th>
+                  <th>{{ t('PWR') }}</th>
+                  <th>{{ t('kcal') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -307,16 +466,16 @@
 
       <details class="activity-disclosure">
         <summary class="activity-disclosure__summary">
-          <span style="font-weight: 800;">Détails Garmin</span>
-          <span class="muted">(JSON brut)</span>
+          <span style="font-weight: 800;">{{ t('Détails Garmin') }}</span>
+          <span class="muted">({{ t('JSON brut') }})</span>
         </summary>
         <div style="height: 10px;"></div>
         <pre class="code-block">{{ details_bundle | tojson(indent=2) }}</pre>
       </details>
     {% else %}
       <div class="card card--muted">
-        <strong>Détails indisponibles</strong>
-        <div class="muted">Clique sur “Mettre à jour” dans la page Activités pour synchroniser les détails.</div>
+        <strong>{{ t('Détails indisponibles') }}</strong>
+        <div class="muted">{{ t('Clique sur "Mettre à jour" dans la page Activités pour synchroniser les détails.') }}</div>
       </div>
     {% endif %}
   </section>

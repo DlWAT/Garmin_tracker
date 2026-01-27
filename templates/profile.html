@@ -4,11 +4,11 @@
   <div class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
       <div>
-        <h1 style="margin-top:0;">Profil</h1>
-        <div class="muted">Règle ta FC max, ta VMA, et tes zones de fréquence cardiaque.</div>
+        <h1 style="margin-top:0;">{{ t('Profil') }}</h1>
+        <div class="muted">{{ t('Règle ta FC max, ta VMA, et tes zones de fréquence cardiaque.') }}</div>
       </div>
       <div>
-        <a class="btn" href="{{ url_for('dashboard') }}">Retour dashboard</a>
+        <a class="btn" href="{{ url_for('dashboard') }}">{{ t('Retour dashboard') }}</a>
       </div>
     </div>
   </div>
@@ -16,8 +16,8 @@
   <div style="height: 16px;"></div>
 
   <section class="card" aria-label="Records">
-    <h2 style="margin-top:0;">Records (course à pied)</h2>
-    <div class="muted">Meilleure performance par distance, basée sur les activités proches de la distance cible.</div>
+    <h2 style="margin-top:0;">{{ t('Records (course à pied)') }}</h2>
+    <div class="muted">{{ t('Meilleure performance par distance, basée sur les activités proches de la distance cible.') }}</div>
 
     {% if records and records|length %}
       <div style="overflow:auto; margin-top: 10px;">
@@ -25,9 +25,9 @@
           <thead>
             <tr class="muted" style="text-align:left;">
               <th style="padding:8px 6px;">Distance</th>
-              <th style="padding:8px 6px;">Temps</th>
-              <th style="padding:8px 6px;">Date</th>
-              <th style="padding:8px 6px;">Activité</th>
+              <th style="padding:8px 6px;">{{ t('Temps') }}</th>
+              <th style="padding:8px 6px;">{{ t('Date') }}</th>
+              <th style="padding:8px 6px;">{{ t('Activité') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -38,7 +38,7 @@
                 <td style="padding:8px 6px;">{{ r.date if r.date else '—' }}</td>
                 <td style="padding:8px 6px;">
                   {% if r.activity_id %}
-                    <a href="{{ url_for('activity_detail', activity_id=r.activity_id) }}">{{ r.activity_name or 'Voir activité' }}</a>
+                    <a href="{{ url_for('activity_detail', activity_id=r.activity_id) }}">{{ r.activity_name or t('Voir activité') }}</a>
                   {% else %}
                     <span class="muted">—</span>
                   {% endif %}
@@ -49,17 +49,17 @@
         </table>
       </div>
     {% else %}
-      <div class="muted" style="margin-top: 10px;">Aucune activité de course détectée.</div>
+      <div class="muted" style="margin-top: 10px;">{{ t('Aucune activité de course détectée.') }}</div>
     {% endif %}
   </section>
 
   <div style="height: 16px;"></div>
 
   <section class="card" aria-label="À venir">
-    <h2 style="margin-top:0;">À venir</h2>
+    <h2 style="margin-top:0;">{{ t('À venir') }}</h2>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start;">
       <div>
-        <h3 style="margin: 0 0 8px 0; color: var(--accent);">Prochains entraînements</h3>
+        <h3 style="margin: 0 0 8px 0; color: var(--accent);">{{ t('Prochains entraînements') }}</h3>
         {% if upcoming_trainings and upcoming_trainings|length %}
           <ul style="list-style:none; padding:0; margin:0; display:grid; gap: 8px;">
             {% for t in upcoming_trainings %}
@@ -73,12 +73,12 @@
             {% endfor %}
           </ul>
         {% else %}
-          <div class="muted">Aucun entraînement planifié.</div>
+          <div class="muted">{{ t('Aucun entraînement planifié.') }}</div>
         {% endif %}
       </div>
 
       <div>
-        <h3 style="margin: 0 0 8px 0; color: var(--accent2);">Prochaines compétitions</h3>
+        <h3 style="margin: 0 0 8px 0; color: var(--accent2);">{{ t('Prochaines compétitions') }}</h3>
         {% if upcoming_competitions and upcoming_competitions|length %}
           <ul style="list-style:none; padding:0; margin:0; display:grid; gap: 8px;">
             {% for c in upcoming_competitions %}
@@ -92,7 +92,7 @@
             {% endfor %}
           </ul>
         {% else %}
-          <div class="muted">Aucune compétition à venir.</div>
+          <div class="muted">{{ t('Aucune compétition à venir.') }}</div>
         {% endif %}
       </div>
     </div>
@@ -102,15 +102,23 @@
 
   <form method="post" action="{{ url_for('profile') }}">
     <section class="card" aria-label="Paramètres">
-      <h2 style="margin-top:0;">Paramètres</h2>
+      <h2 style="margin-top:0;">{{ t('Paramètres') }}</h2>
 
       <div class="field">
-        <label for="fcmax">FC max (bpm)</label>
+        <label for="lang">{{ t('Langue') }}</label>
+        <select id="lang" name="lang" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text);">
+          <option value="fr" {% if (profile_lang or lang) == 'fr' %}selected{% endif %}>{{ t('Français') }}</option>
+          <option value="en" {% if (profile_lang or lang) == 'en' %}selected{% endif %}>{{ t('Anglais') }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fcmax">{{ t('FC max (bpm)') }}</label>
         <input id="fcmax" name="fcmax" type="number" min="0" step="1" value="{{ profile.fcmax or '' }}" placeholder="ex: 190" />
       </div>
 
       <div class="field">
-        <label for="vma">VMA (km/h)</label>
+        <label for="vma">{{ t('VMA (km/h)') }}</label>
         <input id="vma" name="vma" type="number" min="0" step="0.1" value="{{ profile.vma or '' }}" placeholder="ex: 16.0" />
       </div>
     </section>
@@ -118,29 +126,29 @@
     <div style="height: 16px;"></div>
 
     <section class="card" aria-label="Zones FC">
-      <h2 style="margin-top:0;">Zones FC (bpm)</h2>
-      <div class="muted">Saisis les seuils <strong>max</strong> de Z1..Z4. Z5 = FC max.</div>
+      <h2 style="margin-top:0;">{{ t('Zones FC (bpm)') }}</h2>
+      <div class="muted">{{ t('Saisis les seuils max de Z1..Z4. Z5 = FC max.') }}</div>
 
       <div class="field">
-        <label for="z1">Z1 max</label>
+        <label for="z1">{{ t('Z1 max') }}</label>
         <input id="z1" name="z1_max" type="number" min="0" step="1" value="{{ zones.z1_max or '' }}" />
       </div>
       <div class="field">
-        <label for="z2">Z2 max</label>
+        <label for="z2">{{ t('Z2 max') }}</label>
         <input id="z2" name="z2_max" type="number" min="0" step="1" value="{{ zones.z2_max or '' }}" />
       </div>
       <div class="field">
-        <label for="z3">Z3 max</label>
+        <label for="z3">{{ t('Z3 max') }}</label>
         <input id="z3" name="z3_max" type="number" min="0" step="1" value="{{ zones.z3_max or '' }}" />
       </div>
       <div class="field">
-        <label for="z4">Z4 max</label>
+        <label for="z4">{{ t('Z4 max') }}</label>
         <input id="z4" name="z4_max" type="number" min="0" step="1" value="{{ zones.z4_max or '' }}" />
       </div>
 
       {% if zone_scale %}
         <div style="height: 10px;"></div>
-        <div class="muted">Aperçu</div>
+        <div class="muted">{{ t('Aperçu') }}</div>
         <div class="zone-scale" role="img" aria-label="Échelle zones fréquence cardiaque">
           {% for seg in zone_scale %}
             <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
@@ -156,6 +164,6 @@
 
     <div style="height: 16px;"></div>
 
-    <button class="btn btn--pink" type="submit">Enregistrer</button>
+    <button class="btn btn--pink" type="submit">{{ t('Enregistrer') }}</button>
   </form>
 {% endblock %}

@@ -7,9 +7,74 @@ import numpy as np
 import re
 import time
 
-from typing import Any
+from typing import Any, Optional
 
 from .echarts import write_timeseries_chart_html
+
+
+def _generate_pace_ticks(min_pace: float, max_pace: float, step_seconds: float = 15.0) -> list[float]:
+    """Generate Y-axis ticks for pace graphs (every 15 seconds by default).
+    
+    Args:
+        min_pace: Minimum pace in minutes/km
+        max_pace: Maximum pace in minutes/km
+        step_seconds: Step between ticks in seconds (default 15)
+    
+    Returns:
+        List of pace values in minutes/km for ticks
+    """
+    if min_pace >= max_pace or max_pace <= 0:
+        return []
+    
+    step_minutes = step_seconds / 60.0  # Convert to minutes
+    start = int(min_pace * 60 / step_seconds) * step_seconds / 60.0  # Round down to nearest step
+    ticks = []
+    current = start
+    while current <= max_pace + 0.001:  # Small epsilon for float comparison
+        if current >= min_pace - 0.001:
+            ticks.append(round(current, 4))  # 4 decimals to avoid float precision issues
+        current += step_minutes
+    
+    return ticks if ticks else []
+
+
+def _assign_zone_colors(hr_values: list[Optional[float]], zones: list[dict]) -> list[Optional[str]]:
+    """Assign HR zone colors to data points.
+    
+    Args:
+        hr_values: List of HR values (nullable)
+        zones: List of zone dicts with 'min', 'max' keys
+    
+    Returns:
+        List of color strings (or None) corresponding to each HR value
+    """
+    if not zones or len(zones) < 5:
+        return [None] * len(hr_values)
+    
+    zone_colors = [
+        "rgba(76, 201, 240, 0.9)",      # Z1 - light blue
+        "rgba(72, 219, 251, 0.9)",      # Z2 - lighter blue
+        "rgba(255, 223, 0, 0.9)",       # Z3 - yellow
+        "rgba(255, 140, 0, 0.9)",       # Z4 - orange
+        "rgba(255, 77, 141, 0.9)",      # Z5 - red/pink
+    ]
+    
+    colors = []
+    for hr in hr_values:
+        if hr is None:
+            colors.append(None)
+        else:
+            hr_val = float(hr)
+            # Find which zone this HR belongs to
+            for z_idx, zone in enumerate(zones[:5]):
+                if hr_val <= zone.get("max", float('inf')):
+                    colors.append(zone_colors[z_idx])
+                    break
+            else:
+                # Beyond Z5
+                colors.append(zone_colors[4])
+    
+    return colors
 
 
 def _graph_cache_path(output_dir: str) -> str:
@@ -71,11 +136,12 @@ def _echarts_mtime() -> float:
 
 
 class GarminActivityManager:
-    def __init__(self, user_id, *, activities=None):
+    def __init__(self, user_id, *, activities=None, hr_zones=None):
         self.user_id = user_id
         self.activities_file = os.path.join("data", f"{self.user_id}_activities.json")
         os.makedirs("data", exist_ok=True)
         self.activities = activities if isinstance(activities, list) else self._load_data()
+        self.hr_zones = hr_zones  # Optional: list of dicts with 'min', 'max'
 
     def _load_data(self):
         """Charge uniquement les activités pour l'utilisateur spécifié."""
@@ -156,6 +222,25 @@ class GarminActivityManager:
             y_ma = [None if pd.isna(v) else float(v) for v in data[f"{column}_MA"].tolist()]
             y_ci = [None if pd.isna(v) else float(v) for v in data[f"{column}_CI"].tolist()]
 
+            # Generate pace ticks and set fixed limits for pace graphs
+            y_ticks = None
+            is_pace_graph = False
+            y_axis_min_override = None
+            y_axis_max_override = None
+            
+            if "Pace" in column or "pace" in column.lower():
+                is_pace_graph = True
+                y_axis_min_override = 3.0  # 3:00/km
+                y_axis_max_override = 7.0  # 7:00/km
+                y_ticks = _generate_pace_ticks(3.0, 7.0)
+
+            # Color HR points by zone
+            y_series_colors = None
+            if "HR" in column or "averageHR" in column or "Average HR" in column:
+                if self.hr_zones and len(self.hr_zones) >= 5:
+                    y_series_colors = _assign_zone_colors(y, self.hr_zones)
+                    y_axis_max_override = self.hr_zones[4].get("max", 200)  # Z5 max = FC max
+
             write_timeseries_chart_html(
                 os.path.join(output_dir, output_file),
                 title=title,
@@ -165,6 +250,11 @@ class GarminActivityManager:
                 color=color,
                 y_ma=y_ma,
                 y_ci=y_ci,
+                y_ticks=y_ticks,
+                y_series_colors=y_series_colors,
+                is_pace_graph=is_pace_graph,
+                y_axis_min_override=y_axis_min_override,
+                y_axis_max_override=y_axis_max_override,
             )
 
         # Use the app theme accent color
@@ -351,6 +441,34 @@ class GarminActivityManager:
             if ci_col in df:
                 y_ci = [None if pd.isna(v) else float(v) for v in df[ci_col].tolist()]
 
+            # Prepare Y-axis overrides and colors based on metric type
+            y_axis_min_override = None
+            y_axis_max_override = None
+            y_ticks = None
+            is_pace_graph = False
+            y_series_colors = None
+
+            if column == "avg_hr" and self.hr_zones and len(self.hr_zones) >= 5:
+                # For HR graphs: max is FC max, color points by zone
+                y_axis_max_override = self.hr_zones[4].get("max", 200)  # Z5 max = FC max
+                y_series_colors = _assign_zone_colors(y, self.hr_zones)
+            elif column == "pace_min_km":
+                # For running pace: fixed 3:00-7:00/km
+                is_pace_graph = True
+                y_axis_min_override = 3.0
+                y_axis_max_override = 7.0
+                y_ticks = _generate_pace_ticks(3.0, 7.0)
+            elif column == "pace_min_100m":
+                # For swimming pace: fixed 1:00-3:00/100m
+                is_pace_graph = True
+                y_axis_min_override = 1.0
+                y_axis_max_override = 3.0
+                y_ticks = _generate_pace_ticks(1.0, 3.0)
+            elif "cadence" in column.lower() or "spm" in column.lower():
+                # For cadence: 0-200
+                y_axis_min_override = 0.0
+                y_axis_max_override = 200.0
+
             write_timeseries_chart_html(
                 os.path.join(output_dir, output_file),
                 title=title,
@@ -360,6 +478,11 @@ class GarminActivityManager:
                 color=color,
                 y_ma=y_ma,
                 y_ci=y_ci,
+                y_ticks=y_ticks,
+                y_series_colors=y_series_colors,
+                is_pace_graph=is_pace_graph,
+                y_axis_min_override=y_axis_min_override,
+                y_axis_max_override=y_axis_max_override,
             )
 
         # Generate graphs for each type

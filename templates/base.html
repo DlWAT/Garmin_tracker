@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,32 +11,38 @@
     <header class="site-header">
         <div class="site-header__inner">
             <div class="brand">
-                <a class="brand__link" href="{% if is_logged_in %}{{ url_for('dashboard') }}{% else %}{{ url_for('home') }}{% endif %}">Garmin Tracker</a>
+                <a class="brand__link" href="{% if is_logged_in %}{{ url_for('dashboard', user=viewing_user_id) }}{% else %}{{ url_for('home') }}{% endif %}">Garmin Tracker</a>
                 {% if is_logged_in and user_id %}
                     <span class="brand__meta">{{ user_id }}</span>
+                    {% if is_coach %}
+                        <span class="badge" title="{{ t('Coach') }}">{{ t('Coach') }}</span>
+                    {% endif %}
                 {% endif %}
             </div>
 
             <nav class="nav">
                 {% if is_logged_in %}
-                    <a class="nav__link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
-                    <a class="nav__link {% if request.endpoint == 'community' %}active{% endif %}" href="{{ url_for('community') }}">Communauté</a>
-                    <a class="nav__link {% if request.endpoint == 'activity' %}active{% endif %}" href="{{ url_for('activity') }}">Activités</a>
-                    <a class="nav__link {% if request.endpoint == 'health' %}active{% endif %}" href="{{ url_for('health') }}">Santé</a>
-                    <a class="nav__link {% if request.endpoint == 'training' %}active{% endif %}" href="{{ url_for('training') }}">Entraînement</a>
-                    <a class="nav__link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profil</a>
-                    {% if is_admin %}
-                        <a class="nav__link {% if request.endpoint == 'admin' %}active{% endif %}" href="{{ url_for('admin') }}">Admin</a>
+                    <a class="nav__link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard', user=viewing_user_id) }}">{{ t('Dashboard') }}</a>
+                    <a class="nav__link {% if request.endpoint == 'community' %}active{% endif %}" href="{{ url_for('community') }}">{{ t('Communauté') }}</a>
+                    {% if is_coach %}
+                        <a class="nav__link {% if request.endpoint == 'coaching' %}active{% endif %}" href="{{ url_for('coaching', user=viewing_user_id) }}">{{ t('Coaching') }}</a>
                     {% endif %}
-                    <a class="nav__link" href="{{ url_for('logout') }}">Déconnexion</a>
+                    <a class="nav__link {% if request.endpoint == 'activity' %}active{% endif %}" href="{{ url_for('activity', user=viewing_user_id) }}">{{ t('Activités') }}</a>
+                    <a class="nav__link {% if request.endpoint == 'health' %}active{% endif %}" href="{{ url_for('health', user=viewing_user_id) }}">{{ t('Santé') }}</a>
+                    <a class="nav__link {% if request.endpoint == 'training' %}active{% endif %}" href="{{ url_for('training', user=viewing_user_id) }}">{{ t('Entraînement') }}</a>
+                    <a class="nav__link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">{{ t('Profil') }}</a>
+                    {% if is_admin %}
+                        <a class="nav__link {% if request.endpoint == 'admin' %}active{% endif %}" href="{{ url_for('admin') }}">{{ t('Admin') }}</a>
+                    {% endif %}
+                    <a class="nav__link" href="{{ url_for('logout') }}">{{ t('Déconnexion') }}</a>
                 {% else %}
-                    <a class="nav__link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Connexion</a>
+                    <a class="nav__link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">{{ t('Connexion') }}</a>
                 {% endif %}
             </nav>
         </div>
     </header>
 
-    <main class="page">
+    <main class="page" {% if is_logged_in and viewing_user_id and user_id and viewing_user_id != user_id %}data-coach-mode="true"{% endif %}>
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         <div class="flash-messages">

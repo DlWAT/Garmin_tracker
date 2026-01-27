@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Entraînement - Garmin Tracker{% endblock %}
+{% block title %}{{ t('Entraînement') }} - Garmin Tracker{% endblock %}
 
 {% block head_extra %}
   <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
@@ -8,13 +8,13 @@
 
 {% block content %}
   <div class="training-header">
-        <h1 style="margin: 0;">Entraînement</h1>
+      <h1 style="margin: 0;">{{ t('Entraînement') }}</h1>
   </div>
 
     <main class="container container--stack">
             <div class="training-tabs" role="tablist" aria-label="Navigation entraînement">
-                    <button id="tab-calendar" class="training-tab is-active" type="button" role="tab" aria-selected="true">Calendrier</button>
-                    <button id="tab-planner" class="training-tab" type="button" role="tab" aria-selected="false">Planificateur de séance</button>
+                    <button id="tab-calendar" class="training-tab is-active" type="button" role="tab" aria-selected="true">{{ t('Calendrier') }}</button>
+                    <button id="tab-planner" class="training-tab" type="button" role="tab" aria-selected="false">{{ t('Planificateur de séance') }}</button>
             </div>
 
             <section class="calendar-container" id="panel-calendar" role="tabpanel" aria-label="Calendrier">
@@ -42,34 +42,34 @@
       <section class="planner" id="panel-planner" role="tabpanel" aria-label="Planificateur" hidden>
           <div class="planner-grid">
               <div class="planner-card">
-                  <h2>Entraînement</h2>
+                  <h2>{{ t('Entraînement') }}</h2>
                   <form id="training-form" class="planner-form" onsubmit="return false;">
                       <div class="planner-form__grid">
                           <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-preset">Séance type</label>
+                              <label for="training-preset">{{ t('Séance type') }}</label>
                               <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                   <select id="training-preset" style="flex: 1; min-width: 220px;">
-                                      <option value="">— Choisir un modèle —</option>
+                                      <option value="">{{ t('— Choisir un modèle —') }}</option>
                                       <option value="recup">Récup</option>
                                       <option value="ef">EF</option>
                                       <option value="tempo">Tempo</option>
                                       <option value="frac_short">Fractionné court</option>
                                       <option value="frac_long">Fractionné long</option>
                                   </select>
-                                  <button class="btn" type="button" id="apply-preset">Appliquer</button>
+                                  <button class="btn" type="button" id="apply-preset">{{ t('Appliquer') }}</button>
                               </div>
-                              <div class="muted">Pré-remplit les champs (modifiable ensuite).</div>
+                              <div class="muted">{{ t('Pré-remplit les champs (modifiable ensuite).') }}</div>
                           </div>
                           <div class="field" style="margin:0;">
-                              <label for="training-title">Titre</label>
+                              <label for="training-title">{{ t('Titre') }}</label>
                               <input type="text" id="training-title" placeholder="Ex: Fractionné 10x400" required>
                           </div>
                           <div class="field" style="margin:0;">
-                              <label for="training-date">Date</label>
+                              <label for="training-date">{{ t('Date') }}</label>
                               <input type="date" id="training-date" required>
                           </div>
                           <div class="field" style="margin:0;">
-                              <label for="training-sport">Sport</label>
+                              <label for="training-sport">{{ t('Sport') }}</label>
                               <select id="training-sport" required>
                                   <option value="running" selected>Course à pied</option>
                                   <option value="cycling">Vélo</option>
@@ -79,15 +79,15 @@
                               </select>
                           </div>
                           <div class="field" style="margin:0;">
-                              <label for="training-distance">Distance (km)</label>
+                              <label for="training-distance">{{ t('Distance (km)') }}</label>
                               <input type="number" id="training-distance" placeholder="Optionnel" step="0.1">
                           </div>
                           <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-description">Description courte</label>
+                              <label for="training-description">{{ t('Description courte') }}</label>
                               <input type="text" id="training-description" placeholder="Optionnel">
                           </div>
                           <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-content">Contenu</label>
+                              <label for="training-content">{{ t('Contenu') }}</label>
                               <textarea id="training-content" class="planner-textarea planner-textarea--content" rows="6" placeholder="Optionnel
 
 Exemple course :
@@ -96,30 +96,30 @@ Exemple course :
 - 10' retour au calme"></textarea>
                           </div>
                           <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-notes">Remarques</label>
+                              <label for="training-notes">{{ t('Remarques') }}</label>
                               <textarea id="training-notes" class="planner-textarea" rows="3" placeholder="Optionnel"></textarea>
                           </div>
                       </div>
                       <div class="planner-actions">
-                          <button class="btn" type="button" id="add-training">Ajouter</button>
+                          <button class="btn" type="button" id="add-training">{{ t('Ajouter') }}</button>
                       </div>
                   </form>
               </div>
 
               <div class="planner-card">
-                  <h2>Compétition</h2>
+                  <h2>{{ t('Compétition') }}</h2>
                   <form id="competition-form" class="planner-form" onsubmit="return false;">
                       <div class="planner-form__grid">
                           <div class="field" style="margin:0;">
-                              <label for="competition-name">Nom</label>
+                              <label for="competition-name">{{ t('Nom') }}</label>
                               <input type="text" id="competition-name" placeholder="Ex: Semi-marathon" required>
                           </div>
                           <div class="field" style="margin:0;">
-                              <label for="competition-date">Date</label>
+                              <label for="competition-date">{{ t('Date') }}</label>
                               <input type="date" id="competition-date" required>
                           </div>
                           <div class="field" style="margin:0;">
-                              <label for="competition-sport">Sport</label>
+                              <label for="competition-sport">{{ t('Sport') }}</label>
                               <select id="competition-sport" required>
                                   <option value="running" selected>Course à pied</option>
                                   <option value="cycling">Vélo</option>
@@ -129,24 +129,24 @@ Exemple course :
                               </select>
                           </div>
                           <div class="field" style="margin:0;">
-                              <label for="competition-distance">Distance (km)</label>
+                              <label for="competition-distance">{{ t('Distance (km)') }}</label>
                               <input type="number" id="competition-distance" placeholder="Optionnel" step="0.1">
                           </div>
                       </div>
                       <div class="planner-actions">
-                          <button class="btn btn--pink" type="button" id="add-competition">Ajouter</button>
+                          <button class="btn btn--pink" type="button" id="add-competition">{{ t('Ajouter') }}</button>
                       </div>
                   </form>
               </div>
 
               <div class="planner-card">
-                  <h2>Prochains entraînements</h2>
+                  <h2>{{ t('Prochains entraînements') }}</h2>
                   <ul id="training-list"></ul>
                   <div class="muted" id="training-list-meta" style="margin-top: 6px;"></div>
               </div>
 
               <div class="planner-card">
-                  <h2>Prochaines compétitions</h2>
+                  <h2>{{ t('Prochaines compétitions') }}</h2>
                   <ul id="competition-list"></ul>
                   <div class="muted" id="competition-list-meta" style="margin-top: 6px;"></div>
               </div>
@@ -159,6 +159,9 @@ Exemple course :
         document.addEventListener("DOMContentLoaded", () => {
             let trainings = {{ trainings|tojson }};
             let competitions = {{ competitions|tojson }};
+
+            const viewingUserId = {{ (viewing_user_id or '')|tojson }};
+            const lang = {{ (lang or 'fr')|tojson }};
 
             let monthTrainings = [];
             let monthCompetitions = [];
@@ -180,6 +183,12 @@ Exemple course :
             const competitionDetailBaseUrl = "{{ url_for('competition_detail', competition_id='__ID__') }}";
             const activityDetailBaseUrl = "{{ url_for('activity_detail', activity_id=0) }}";
 
+            const withUserParam = (url) => {
+                if (!viewingUserId) return url;
+                const sep = url.includes('?') ? '&' : '?';
+                return `${url}${sep}user=${encodeURIComponent(viewingUserId)}`;
+            };
+
             const setActiveTab = (tab) => {
                 const isCalendar = tab === 'calendar';
                 tabCalendar.classList.toggle('is-active', isCalendar);
@@ -196,7 +205,7 @@ Exemple course :
             const activityUrl = (activityId) => {
                 const id = Number(activityId);
                 if (!Number.isFinite(id)) return null;
-                return activityDetailBaseUrl.replace(/\/0$/, `/${encodeURIComponent(String(id))}`);
+                return withUserParam(activityDetailBaseUrl.replace(/\/0$/, `/${encodeURIComponent(String(id))}`));
             };
 
             let currentDate = new Date();
@@ -217,7 +226,7 @@ Exemple course :
             const loadMonthEvents = async () => {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth() + 1;
-                const url = `${calendarEventsUrl}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`;
+                const url = `${calendarEventsUrl}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${viewingUserId ? `&user=${encodeURIComponent(viewingUserId)}` : ''}`;
                 const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                 if (!res.ok) throw new Error(`calendar_events ${res.status}`);
                 const data = await res.json();
@@ -239,13 +248,22 @@ Exemple course :
             };
 
             const sportLabel = (sport) => {
-                return {
+                const fr = {
                     running: 'Course à pied',
                     cycling: 'Vélo',
                     swimming: 'Natation',
                     strength_training: 'Musculation',
                     other: 'Autre'
-                }[sport] || 'Autre';
+                };
+                const en = {
+                    running: 'Running',
+                    cycling: 'Cycling',
+                    swimming: 'Swimming',
+                    strength_training: 'Strength',
+                    other: 'Other'
+                };
+                const table = (lang === 'en') ? en : fr;
+                return table[sport] || table.other;
             };
 
             const workoutPresets = {
@@ -461,6 +479,7 @@ Exemple course :
                 if (type === 'training') form.append('title', name);
                 form.append('date', date);
                 form.append('sport', sport);
+                if (viewingUserId) form.append('user_id', viewingUserId);
                 if (distance) form.append('distance', distance);
                 if (type === 'training') {
                     if (description) form.append('description', description);
@@ -469,18 +488,21 @@ Exemple course :
                 }
                 if (type === 'competition') form.append('location', '');
 
-                fetch(type === 'training' ? '/mytrainer/add_training' : '/mytrainer/add_competition', {
+                fetch(type === 'training' ? "{{ url_for('add_training') }}" : "{{ url_for('add_competition') }}", {
                     method: 'POST',
                     body: form
-                }).then(() => window.location.reload());
+                }).then(() => {
+                    const url = withUserParam(window.location.pathname);
+                    window.location.href = url;
+                });
             };
 
             window.deleteCompetition = (name) => {
-                window.location.href = `/mytrainer/remove_competition/${encodeURIComponent(name)}`;
+                window.location.href = withUserParam(`{{ url_for('remove_competition', competition_id='__ID__') }}`.replace('__ID__', encodeURIComponent(name)));
             };
 
             window.deleteTraining = (name) => {
-                window.location.href = `/mytrainer/remove_training/${encodeURIComponent(name)}`;
+                window.location.href = withUserParam(`{{ url_for('remove_training', training_id='__ID__') }}`.replace('__ID__', encodeURIComponent(name)));
             };
 
             const renderList = () => {
@@ -515,20 +537,20 @@ Exemple course :
                 competitionList.innerHTML = (shownCompetitions.length ? shownCompetitions : [null]).map(competition => competition ? `
                     <li>
                         <div>
-                            <strong><a href="${competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(competition.id))}">${competition.name}</a></strong>
+                            <strong><a href="${withUserParam(competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(competition.id)))}">${competition.name}</a></strong>
                             <p>Date: ${competition.date} | Sport: ${sportLabel(competition.sport)} | Distance: ${competition.distance || 'N/A'} km</p>
                         </div>
-                        <button class="delete-button" onclick="deleteCompetition('${(competition.id || competition.name).toString().replace(/'/g, "\\'")}')">Supprimer</button>
+                        <button class="delete-button" onclick="deleteCompetition('${(competition.id || competition.name).toString().replace(/'/g, "\\'")}')">${lang === 'en' ? 'Delete' : 'Supprimer'}</button>
                     </li>
                 ` : `<li class="muted">Aucune compétition à venir</li>`).join("");
 
                 trainingList.innerHTML = (shownTrainings.length ? shownTrainings : [null]).map(training => training ? `
                     <li>
                         <div>
-                            <strong><a href="${trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(training.id))}">${training.title}</a></strong>
+                            <strong><a href="${withUserParam(trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(training.id)))}">${training.title}</a></strong>
                             <p>Date: ${training.date} | Sport: ${sportLabel(training.sport)} | Distance: ${(training.distance_km ?? 'N/A')} km</p>
                         </div>
-                        <button class="delete-button" onclick="deleteTraining('${(training.id || training.title).toString().replace(/'/g, "\\'")}')">Supprimer</button>
+                        <button class="delete-button" onclick="deleteTraining('${(training.id || training.title).toString().replace(/'/g, "\\'")}')">${lang === 'en' ? 'Delete' : 'Supprimer'}</button>
                     </li>
                 ` : `<li class="muted">Aucun entraînement planifié</li>`).join("");
 
@@ -562,7 +584,7 @@ Exemple course :
                 const params = new URLSearchParams(window.location.search || '');
                 const copyActivityId = params.get('copy_activity_id');
                 if (copyActivityId) {
-                    fetch(`${activityAsTrainingUrl}?activity_id=${encodeURIComponent(copyActivityId)}`, { headers: { 'Accept': 'application/json' } })
+                    fetch(`${activityAsTrainingUrl}?activity_id=${encodeURIComponent(copyActivityId)}${viewingUserId ? `&user=${encodeURIComponent(viewingUserId)}` : ''}`, { headers: { 'Accept': 'application/json' } })
                         .then((r) => r.ok ? r.json() : null)
                         .then((data) => {
                             if (!data) return;

@@ -28,7 +28,7 @@
       </p>
 
       <div style="margin-top: 20px;">
-        <a class="nav__link" href="{{ url_for('training') }}">← Retour au calendrier</a>
+        <a class="nav__link" href="{{ url_for('training', user=viewing_user_id) }}">← Retour au calendrier</a>
       </div>
     </section>
 
@@ -41,7 +41,7 @@
           {% for a in matched_activities %}
             <li style="background: var(--muted-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
               {% if a.activity_id %}
-                <a href="{{ url_for('activity_detail', activity_id=a.activity_id) }}" style="text-decoration: none; color: var(--text); font-weight: 800;">
+                <a href="{{ url_for('activity_detail', activity_id=a.activity_id, user=viewing_user_id) }}" style="text-decoration: none; color: var(--text); font-weight: 800;">
                   {{ a.name }}
                 </a>
               {% else %}

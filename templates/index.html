@@ -6,103 +6,129 @@
 
 {% block content %}
     <section class="card">
-        <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
             <div>
-                <h1 style="margin-top: 0;">Dashboard</h1>
-                <div class="muted">Tous sports — {{ period_label }}</div>
-                {% if viewing_user_id and user_id and viewing_user_id != user_id %}
-                    <div class="muted">Vue: {{ viewing_user_id }}</div>
-                {% endif %}
+                <h1 style="margin: 0 0 6px 0; font-size: 2rem; font-weight: 900;">{{ t('Dashboard') }}</h1>
+                <div class="muted" style="font-size: 1rem;">
+                    <span style="font-weight: 600;">{{ period_label }}</span>
+                    {% if viewing_user_id and user_id and viewing_user_id != user_id %}
+                        &nbsp;•&nbsp;{{ t('Vue') }}: {{ viewing_user_id }}
+                    {% endif %}
+                </div>
             </div>
-            <div style="display:flex; gap: 10px; flex-wrap: wrap;">
-                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=prev_anchor, user=viewing_user_id, sport=sport) }}">◀</a>
-                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=next_anchor, user=viewing_user_id, sport=sport) }}">▶</a>
+            <div style="display:flex; gap: 8px;">
+                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=prev_anchor, user=viewing_user_id, sport=sport) }}" style="min-width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">◀</a>
+                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=next_anchor, user=viewing_user_id, sport=sport) }}" style="min-width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">▶</a>
             </div>
         </div>
 
-        <div style="height: 12px;"></div>
-
-        <form method="get" action="{{ url_for('dashboard') }}" style="display:flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+        <form method="get" action="{{ url_for('dashboard') }}" style="display:flex; gap: 12px; flex-wrap: wrap; align-items: end;">
             <input type="hidden" name="user" value="{{ viewing_user_id }}" />
-            <div class="field" style="margin:0; min-width: 180px;">
-                <label for="period">Période</label>
-                <select id="period" name="period" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text);">
-                    <option value="week" {% if period == 'week' %}selected{% endif %}>Semaine</option>
-                    <option value="month" {% if period == 'month' %}selected{% endif %}>Mois</option>
-                    <option value="year" {% if period == 'year' %}selected{% endif %}>Année</option>
+            <div class="field" style="margin:0; min-width: 180px; flex: 1;">
+                <label for="period" style="font-weight: 600; margin-bottom: 6px; display: block;">{{ t('Période') }}</label>
+                <select id="period" name="period" style="width:100%; padding:11px 14px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); font-size: 0.95rem;">
+                    <option value="week" {% if period == 'week' %}selected{% endif %}>{{ t('Semaine') }}</option>
+                    <option value="month" {% if period == 'month' %}selected{% endif %}>{{ t('Mois') }}</option>
+                    <option value="year" {% if period == 'year' %}selected{% endif %}>{{ t('Année') }}</option>
                 </select>
             </div>
 
-            <div class="field" style="margin:0; min-width: 180px;">
-                <label for="sport">Sport (graphiques)</label>
-                <select id="sport" name="sport" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text);">
-                    <option value="all" {% if sport == 'all' or not sport %}selected{% endif %}>Tous</option>
+            <div class="field" style="margin:0; min-width: 180px; flex: 1;">
+                <label for="sport" style="font-weight: 600; margin-bottom: 6px; display: block;">{{ t('Sport') }}</label>
+                <select id="sport" name="sport" style="width:100%; padding:11px 14px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); font-size: 0.95rem;">
+                    <option value="all" {% if sport == 'all' or not sport %}selected{% endif %}>{{ t('Tous') }}</option>
                     {% for s in available_sports %}
                         <option value="{{ s }}" {% if sport == s %}selected{% endif %}>{{ s }}</option>
                     {% endfor %}
                 </select>
             </div>
 
-            <div class="field" style="margin:0; min-width: 180px;">
-                <label for="anchor">Date</label>
-                <input id="anchor" name="anchor" type="date" value="{{ anchor }}" />
+            <div class="field" style="margin:0; min-width: 180px; flex: 1;">
+                <label for="anchor" style="font-weight: 600; margin-bottom: 6px; display: block;">{{ t('Date') }}</label>
+                <input id="anchor" name="anchor" type="date" value="{{ anchor }}" style="padding:11px 14px; font-size: 0.95rem;" />
             </div>
 
-            <button class="btn btn--pink" type="submit">Afficher</button>
-            <a class="btn" href="{{ url_for('profile') }}">Régler zones</a>
+            <button class="btn btn--pink" type="submit" style="height: 44px; padding: 0 20px; font-weight: 600;">{{ t('Afficher') }}</button>
+            <a class="btn" href="{{ url_for('profile') }}" style="height: 44px; padding: 0 20px; display: flex; align-items: center;">{{ t('Régler zones') }}</a>
         </form>
     </section>
 
-    <div style="height: 16px;"></div>
+    <div style="height: 20px;"></div>
 
     <section class="card" aria-label="Prochainements">
-        <h2 style="margin-top:0;">Prochainements</h2>
+        <h2 style="margin: 0 0 16px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Prochainements') }}</h2>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
             <div>
-                <div style="font-weight: 900; margin-bottom: 8px;">Prochains entraînements</div>
+                <div style="font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; color: var(--text);">{{ t('Prochains entraînements') }}</div>
                 {% if next_trainings and next_trainings|length %}
                     <ul style="list-style: none; padding: 0; margin: 0;">
                         {% for t in next_trainings %}
-                            <li style="background: var(--muted-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                            {% set rpe_val = t.get('rpe') %}
+                            {% set bg_style = '' %}
+                            {% if rpe_val is not none %}
+                                {% if rpe_val <= 3 %}
+                                    {% set bg_style = 'background: rgba(34, 197, 94, 0.1); border-left: 3px solid rgba(34, 197, 94, 0.6);' %}
+                                {% elif rpe_val <= 6 %}
+                                    {% set bg_style = 'background: rgba(234, 179, 8, 0.1); border-left: 3px solid rgba(234, 179, 8, 0.6);' %}
+                                {% else %}
+                                    {% set bg_style = 'background: rgba(239, 68, 68, 0.1); border-left: 3px solid rgba(239, 68, 68, 0.6);' %}
+                                {% endif %}
+                            {% else %}
+                                {% set bg_style = 'background: rgba(8, 12, 22, 0.5); border-left: 3px solid rgba(76, 201, 240, 0.4);' %}
+                            {% endif %}
+                            <li style="{{ bg_style }} border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; transition: transform 0.15s ease, box-shadow 0.15s ease;">
                                 {% if viewing_user_id == user_id %}
-                                    <a href="{{ url_for('training_detail', training_id=t.id) }}" style="text-decoration: none; color: var(--text); font-weight: 800;">
+                                    <a href="{{ url_for('training_detail', training_id=t.id) }}" style="text-decoration: none; color: var(--text); font-weight: 700; font-size: 1rem; display: block;">
                                         {{ t.date }} — {{ t.title }}
                                     </a>
                                 {% else %}
-                                    <strong style="color: var(--text);">{{ t.date }} — {{ t.title }}</strong>
+                                    <strong style="color: var(--text); font-size: 1rem; display: block;">{{ t.date }} — {{ t.title }}</strong>
                                 {% endif %}
-                                <div class="muted" style="margin-top: 4px;">
+                                <div class="muted" style="margin-top: 6px; font-size: 0.9rem;">
                                     {{ t.sport_label }}
                                     {% if t.distance_km is not none %}
                                         &nbsp;•&nbsp;{{ "%.1f"|format(t.distance_km|float) }} km
                                     {% endif %}
                                 </div>
                                 {% if t.description %}
-                                    <div class="muted" style="margin-top: 4px;">{{ t.description }}</div>
+                                    <div class="muted" style="margin-top: 6px; font-size: 0.88rem; line-height: 1.4;">{{ t.description }}</div>
                                 {% endif %}
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="muted">Aucun entraînement planifié.</div>
+                    <div class="muted" style="padding: 16px; background: rgba(8, 12, 22, 0.5); border-radius: 10px; text-align: center;">{{ t('Aucun entraînement planifié.') }}</div>
                 {% endif %}
             </div>
 
             <div>
-                <div style="font-weight: 900; margin-bottom: 8px;">Prochaines compétitions</div>
+                <div style="font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; color: var(--text);">{{ t('Prochaines compétitions') }}</div>
                 {% if next_competitions and next_competitions|length %}
                     <ul style="list-style: none; padding: 0; margin: 0;">
                         {% for c in next_competitions %}
-                            <li style="background: var(--muted-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                            {% set rpe_val = c.get('rpe') %}
+                            {% set bg_style = '' %}
+                            {% if rpe_val is not none %}
+                                {% if rpe_val <= 3 %}
+                                    {% set bg_style = 'background: rgba(34, 197, 94, 0.1); border-left: 3px solid rgba(34, 197, 94, 0.6);' %}
+                                {% elif rpe_val <= 6 %}
+                                    {% set bg_style = 'background: rgba(234, 179, 8, 0.1); border-left: 3px solid rgba(234, 179, 8, 0.6);' %}
+                                {% else %}
+                                    {% set bg_style = 'background: rgba(239, 68, 68, 0.1); border-left: 3px solid rgba(239, 68, 68, 0.6);' %}
+                                {% endif %}
+                            {% else %}
+                                {% set bg_style = 'background: rgba(8, 12, 22, 0.5); border-left: 3px solid rgba(76, 201, 240, 0.4);' %}
+                            {% endif %}
+                            <li style="{{ bg_style }} border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; transition: transform 0.15s ease, box-shadow 0.15s ease;">
                                 {% if viewing_user_id == user_id %}
-                                    <a href="{{ url_for('competition_detail', competition_id=c.id) }}" style="text-decoration: none; color: var(--text); font-weight: 800;">
+                                    <a href="{{ url_for('competition_detail', competition_id=c.id) }}" style="text-decoration: none; color: var(--text); font-weight: 700; font-size: 1rem; display: block;">
                                         {{ c.date }} — {{ c.name }}
                                     </a>
                                 {% else %}
-                                    <strong style="color: var(--text);">{{ c.date }} — {{ c.name }}</strong>
+                                    <strong style="color: var(--text); font-size: 1rem; display: block;">{{ c.date }} — {{ c.name }}</strong>
                                 {% endif %}
-                                <div class="muted" style="margin-top: 4px;">
+                                <div class="muted" style="margin-top: 6px; font-size: 0.9rem;">
                                     {{ c.sport_label }}
                                     {% if c.distance is not none %}
                                         &nbsp;•&nbsp;{{ c.distance }} km
@@ -115,55 +141,56 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="muted">Aucune compétition planifiée.</div>
+                    <div class="muted" style="padding: 16px; background: rgba(8, 12, 22, 0.5); border-radius: 10px; text-align: center;">{{ t('Aucune compétition planifiée.') }}</div>
                 {% endif %}
             </div>
         </div>
     </section>
 
-    <div style="height: 16px;"></div>
+    <div style="height: 20px;"></div>
 
     <section class="card" aria-label="Compte rendu">
-        <h2 style="margin-top:0;">Compte rendu</h2>
-        <div class="muted">{{ intensity_summary }}</div>
+        <h2 style="margin: 0 0 12px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Compte rendu') }}</h2>
+        <div style="background: rgba(76, 201, 240, 0.08); border-left: 3px solid rgba(76, 201, 240, 0.6); border-radius: 10px; padding: 16px; margin-bottom: 12px;">
+            <div style="font-weight: 600; font-size: 1.05rem;">{{ intensity_summary }}</div>
+        </div>
         {% if report_lines and report_lines|length %}
-            <div style="height: 10px;"></div>
             {% for line in report_lines %}
-                <div class="muted">• {{ line }}</div>
+                <div class="muted" style="padding-left: 12px; margin-bottom: 6px; line-height: 1.5;">• {{ line }}</div>
             {% endfor %}
         {% else %}
-            <div class="muted">Temps cumulé: {{ total_time }}</div>
+            <div class="muted" style="padding-left: 12px;">{{ t('Temps cumulé') }}: {{ total_time }}</div>
         {% endif %}
-        <div style="height: 10px;"></div>
-        <div class="muted">Conseil: ajuste tes zones dans Profil pour fiabiliser les répartitions.</div>
+        <div style="height: 8px;"></div>
+        <div class="muted" style="font-size: 0.88rem; padding: 12px; background: rgba(8, 12, 22, 0.5); border-radius: 8px;">💡 {{ t('Conseil: ajuste tes zones dans Profil pour fiabiliser les répartitions.') }}</div>
     </section>
 
-    <div style="height: 16px;"></div>
+    <div style="height: 20px;"></div>
 
     <section class="card" aria-label="Par sport">
-        <h2 style="margin-top:0;">Par sport</h2>
+        <h2 style="margin: 0 0 16px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Par sport') }}</h2>
         {% if not sport_rows %}
-            <div class="muted">Aucune activité sur la période.</div>
+            <div class="muted" style="padding: 16px; background: rgba(8, 12, 22, 0.5); border-radius: 10px; text-align: center;">{{ t('Aucune activité sur la période.') }}</div>
         {% else %}
             <div style="overflow:auto;">
                 <table style="width:100%; border-collapse: collapse;">
                     <thead>
-                        <tr class="muted" style="text-align:left;">
-                            <th style="padding:8px 6px;">Sport</th>
-                            <th style="padding:8px 6px;">Séances</th>
-                            <th style="padding:8px 6px;">Temps</th>
-                            <th style="padding:8px 6px;">Distance</th>
-                            <th style="padding:8px 6px;">Charge</th>
+                        <tr class="muted" style="text-align:left; border-bottom: 2px solid rgba(76, 201, 240, 0.2);">
+                            <th style="padding:12px 8px; font-weight: 700;">Sport</th>
+                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Séances') }}</th>
+                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Temps') }}</th>
+                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Distance') }}</th>
+                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Charge') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for r in sport_rows %}
-                            <tr style="border-top: 1px solid rgba(234, 241, 255, 0.08);">
-                                <td style="padding:8px 6px; font-weight: 800;">{{ r.sport }}</td>
-                                <td style="padding:8px 6px;">{{ r.count }}</td>
-                                <td style="padding:8px 6px;">{{ r.time }}</td>
-                                <td style="padding:8px 6px;">{{ r.km }} km</td>
-                                <td style="padding:8px 6px;">{{ r.load }}</td>
+                            <tr style="border-top: 1px solid rgba(234, 241, 255, 0.08); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(76, 201, 240, 0.05)'" onmouseout="this.style.background=''">
+                                <td style="padding:12px 8px; font-weight: 700;">{{ r.sport }}</td>
+                                <td style="padding:12px 8px;">{{ r.count }}</td>
+                                <td style="padding:12px 8px;">{{ r.time }}</td>
+                                <td style="padding:12px 8px;">{{ r.km }} km</td>
+                                <td style="padding:12px 8px; font-weight: 600;">{{ r.load }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -173,83 +200,87 @@
     </section>
 
     {% if dashboard_graphs and dashboard_graphs|length %}
-        <div style="height: 16px;"></div>
+        <div style="height: 20px;"></div>
         <section class="card" aria-label="Graphiques">
-            <h2 style="margin-top:0;">Graphiques</h2>
+            <h2 style="margin: 0 0 16px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Graphiques') }}</h2>
             <section class="graph-grid">
                 {% for g in dashboard_graphs %}
-                    <iframe class="graph-frame" loading="lazy" src="{{ g.url }}" title="{{ g.title }}"></iframe>
+                    <iframe class="graph-frame" loading="lazy" src="{{ g.url }}" title="{{ g.title }}" style="border: 1px solid rgba(76, 201, 240, 0.15); border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);"></iframe>
                 {% endfor %}
             </section>
         </section>
     {% endif %}
 
-    <div style="height: 16px;"></div>
+    <div style="height: 20px;"></div>
 
     <section class="card" aria-label="Zones FC">
-        <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
-            <h2 style="margin-top:0;">Zones de fréquence cardiaque</h2>
+        <div style="margin-bottom: 16px;">
+            <h2 style="margin: 0 0 8px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Zones de fréquence cardiaque') }}</h2>
             {% if not zones %}
-                <div class="muted">Définis ta FC max et tes zones dans Profil.</div>
+                <div class="muted" style="padding: 12px; background: rgba(239, 68, 68, 0.1); border-left: 3px solid rgba(239, 68, 68, 0.6); border-radius: 8px;">
+                    ⚠️ {{ t('Définis ta FC max et tes zones dans Profil.') }}
+                </div>
             {% elif zones_inferred %}
-                <div class="muted">Zones estimées (FC max observée: {{ fcmax_used }}). Règle Profil pour fiabiliser.</div>
+                <div class="muted" style="padding: 12px; background: rgba(234, 179, 8, 0.1); border-left: 3px solid rgba(234, 179, 8, 0.6); border-radius: 8px;">
+                    💡 {{ t('Zones estimées (FC max observée: {fcmax}). Règle Profil pour fiabiliser.', fcmax=fcmax_used) }}
+                </div>
             {% endif %}
         </div>
 
         {% if zone_dist %}
-            <div class="muted" style="margin-bottom: 6px;">Répartition (temps, %)</div>
-            <div class="zone-scale" role="img" aria-label="Répartition zones fréquence cardiaque (temps)">
+            <div class="muted" style="margin-bottom: 8px; font-weight: 600; font-size: 0.95rem;">{{ t('Répartition (temps, %)') }}</div>
+            <div class="zone-scale" role="img" aria-label="Répartition zones fréquence cardiaque (temps)" style="border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
                 {% for seg in zone_dist %}
                     <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
                 {% endfor %}
             </div>
-            <div class="zone-scale__labels">
+            <div class="zone-scale__labels" style="margin-top: 8px;">
                 {% for seg in zone_dist %}
-                    <div class="zone-scale__label">{{ seg.short }}</div>
+                    <div class="zone-scale__label" style="font-weight: 600;">{{ seg.short }}</div>
                 {% endfor %}
             </div>
-            <div style="height: 12px;"></div>
+            <div style="height: 20px;"></div>
         {% endif %}
 
         {% if zone_target %}
-            <div class="muted" style="margin-bottom: 6px;">Objectif (référence)</div>
-            <div class="zone-scale" role="img" aria-label="Objectif de répartition zones fréquence cardiaque">
+            <div class="muted" style="margin-bottom: 8px; font-weight: 600; font-size: 0.95rem;">{{ t('Objectif (référence)') }}</div>
+            <div class="zone-scale" role="img" aria-label="Objectif de répartition zones fréquence cardiaque" style="border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
                 {% for seg in zone_target %}
                     <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
                 {% endfor %}
             </div>
-            <div class="zone-scale__labels">
+            <div class="zone-scale__labels" style="margin-top: 8px;">
                 {% for seg in zone_target %}
-                    <div class="zone-scale__label">{{ seg.short }}</div>
+                    <div class="zone-scale__label" style="font-weight: 600;">{{ seg.short }}</div>
                 {% endfor %}
             </div>
-            <div style="height: 12px;"></div>
+            <div style="height: 20px;"></div>
         {% endif %}
 
         <div class="zones">
             {% for z in zones_rows %}
-                <div class="zone">
-                    <div class="zone__top">
-                        <span style="font-weight: 900;">{{ z.zone }}</span>
-                        <span class="muted">{{ z.time }} · {{ z.km }} km</span>
-                        <span class="muted">{{ z.pct_time }}%</span>
-                        <span class="muted">{{ z.pct_km }}%</span>
+                <div class="zone" style="border-radius: 10px; overflow: hidden; background: rgba(8, 12, 22, 0.3); margin-bottom: 10px;">
+                    <div class="zone__top" style="padding: 12px 14px;">
+                        <span style="font-weight: 800; font-size: 1rem;">{{ z.zone }}</span>
+                        <span class="muted" style="font-size: 0.9rem;">{{ z.time }} · {{ z.km }} km</span>
+                        <span class="muted" style="font-weight: 600;">{{ z.pct_time }}%</span>
+                        <span class="muted" style="font-weight: 600;">{{ z.pct_km }}%</span>
                     </div>
                     <div class="zone__bar">
-                        <div class="zone__barFill" style="width: {{ z.pct_time }}%; background: {{ z.color }};"></div>
+                        <div class="zone__barFill" style="width: {{ z.pct_time }}%; background: {{ z.color }}; height: 8px;"></div>
                     </div>
                 </div>
             {% endfor %}
 
-            <div class="zone">
-                <div class="zone__top">
-                    <span style="font-weight: 900;">Total</span>
-                    <span class="muted">{{ total_time }} · {{ total_km }} km</span>
-                    <span class="muted">100%</span>
-                    <span class="muted">100%</span>
+            <div class="zone" style="border-radius: 10px; overflow: hidden; background: rgba(76, 201, 240, 0.08); margin-top: 16px;">
+                <div class="zone__top" style="padding: 12px 14px;">
+                    <span style="font-weight: 900; font-size: 1.05rem;">{{ t('Total') }}</span>
+                    <span class="muted" style="font-size: 0.9rem;">{{ total_time }} · {{ total_km }} km</span>
+                    <span class="muted" style="font-weight: 700;">100%</span>
+                    <span class="muted" style="font-weight: 700;">100%</span>
                 </div>
                 <div class="zone__bar">
-                    <div class="zone__barFill" style="width: 100%; background: rgba(234, 241, 255, 0.12);"></div>
+                    <div class="zone__barFill" style="width: 100%; background: rgba(76, 201, 240, 0.5); height: 10px;"></div>
                 </div>
             </div>
         </div>

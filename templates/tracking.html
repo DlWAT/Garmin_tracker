@@ -1,22 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi</title>
+{% extends "base.html" %}
+
+{% block title %}{{ t('Suivi') }} - Garmin Tracker{% endblock %}
+
+{% block head_extra %}
     <link rel="stylesheet" href="{{ url_for('static', filename='tracking.css') }}">
-</head>
-<body>
-    <header>
-        <h1>Suivi</h1>
-        <nav>
-            <a href="/">Accueil</a>
-            <a href="/activity">Activités</a>
-            <a href="/health">Santé</a>
-            <a href="/training">Entraînements</a>
-            <a href="/tracking" class="active">Suivi</a>
-        </nav>
-    </header>
+{% endblock %}
+
+{% block content %}
+    <h1 style="margin: 0;">{{ t('Suivi') }}</h1>
+
+    <div style="height: 16px;"></div>
 
     <main class="container">
         <!-- Graphique 1 : Volume hebdomadaire -->
@@ -29,5 +22,4 @@
             <iframe src="{{ url_for('static', filename='tracking/hr_zones_weekly.html') }}"></iframe>
         </div>
     </main>
-</body>
-</html>
+{% endblock %}

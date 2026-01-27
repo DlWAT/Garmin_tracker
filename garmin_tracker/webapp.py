@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from passlib.hash import argon2
 
-from .activity_manager import GarminActivityManager
+from .activity_manager import GarminActivityManager, _generate_pace_ticks
 from .client_manager import GarminClientHandler, GarminLoginError
 from .health_manager import GarminHealthManager
 from .training_analysis import TrainingAnalysis
@@ -2091,6 +2091,10 @@ def create_app() -> Flask:
                 y: Sequence[float | None],
                 *,
                 color: str = "#4CC9F0",
+                y_axis_min_override: float | None = None,
+                y_axis_max_override: float | None = None,
+                y_series_colors: list[str | None] | None = None,
+                is_pace_graph: bool = False,
             ) -> None:
                 if not y or all(v is None for v in y):
                     return
@@ -2104,6 +2108,10 @@ def create_app() -> Flask:
                 except OSError:
                     pass
 
+                pace_ticks = None
+                if is_pace_graph and y_axis_min_override is not None and y_axis_max_override is not None:
+                    pace_ticks = _generate_pace_ticks(y_axis_min_override, y_axis_max_override)
+
                 write_timeseries_chart_html(
                     out_path,
                     title=title,
@@ -2111,6 +2119,11 @@ def create_app() -> Flask:
                     y=list(y),
                     y_label=y_label,
                     color=color,
+                    y_series_colors=y_series_colors,
+                    is_pace_graph=is_pace_graph,
+                    y_axis_min_override=y_axis_min_override,
+                    y_axis_max_override=y_axis_max_override,
+                    y_ticks=pace_ticks,
                     interaction="fit",
                 )
                 graph_urls.append(url_for("static", filename=out_rel))
@@ -2170,26 +2183,110 @@ def create_app() -> Flask:
                 else:
                     pace_min_100m.append(None)
 
+            hr_zones_compat = None
+            if isinstance(hr_zones, list) and len(hr_zones) >= 5:
+                parsed_zones = []
+                for z in hr_zones:
+                    if not isinstance(z, dict):
+                        continue
+                    parsed_zones.append({"min": z.get("zoneLowBoundary"), "max": z.get("zoneHighBoundary")})
+                if len(parsed_zones) >= 5:
+                    hr_zones_compat = parsed_zones
+
+            hr_colors = None
+            hr_max = None
+            if hr_zones_compat:
+                from garmin_tracker.activity_manager import _assign_zone_colors
+
+                hr_colors = _assign_zone_colors(hr, hr_zones_compat)
+                hr_max = hr_zones_compat[4].get("max", 200)
+
             # Pick up to 3 charts depending on sport.
             if type_key == "running":
-                add_chart("hr", "Fréquence cardiaque", "BPM", hr)
-                add_chart("pace", "Allure", "min/km", pace_min_km)
-                add_chart("cadence", "Cadence", "pas/min", run_cad)
+                add_chart(
+                    "hr",
+                    "Fréquence cardiaque",
+                    "BPM",
+                    hr,
+                    y_series_colors=hr_colors,
+                    y_axis_max_override=hr_max,
+                )
+                add_chart(
+                    "pace",
+                    "Allure",
+                    "min/km",
+                    pace_min_km,
+                    y_axis_min_override=3.0,
+                    y_axis_max_override=7.0,
+                    is_pace_graph=True,
+                )
+                add_chart(
+                    "cadence",
+                    "Cadence",
+                    "pas/min",
+                    run_cad,
+                    y_axis_min_override=0.0,
+                    y_axis_max_override=200.0,
+                )
             elif type_key == "cycling":
-                add_chart("hr", "Fréquence cardiaque", "BPM", hr)
+                add_chart(
+                    "hr",
+                    "Fréquence cardiaque",
+                    "BPM",
+                    hr,
+                    y_series_colors=hr_colors,
+                    y_axis_max_override=hr_max,
+                )
                 add_chart("speed", "Vitesse", "km/h", speed_kmh)
                 add_chart("power", "Puissance", "W", power)
             elif type_key == "swimming":
-                add_chart("pace", "Allure", "min/100m", pace_min_100m)
-                add_chart("cadence", "Cadence", "coups/min", swim_cad, color="#FF4D8D")
+                add_chart(
+                    "pace",
+                    "Allure",
+                    "min/100m",
+                    pace_min_100m,
+                    y_axis_min_override=1.0,
+                    y_axis_max_override=3.0,
+                    is_pace_graph=True,
+                )
+                add_chart(
+                    "cadence",
+                    "Cadence",
+                    "coups/min",
+                    swim_cad,
+                    color="#FF4D8D",
+                    y_axis_min_override=0.0,
+                    y_axis_max_override=200.0,
+                )
                 add_chart("swolf", "SWOLF", "score (50m)", swolf, color="#FF4D8D")
                 add_chart("speed", "Vitesse", "km/h", speed_kmh)
-                add_chart("hr", "Fréquence cardiaque", "BPM", hr)
+                add_chart(
+                    "hr",
+                    "Fréquence cardiaque",
+                    "BPM",
+                    hr,
+                    y_series_colors=hr_colors,
+                    y_axis_max_override=hr_max,
+                )
             elif type_key == "strength_training":
-                add_chart("hr", "Fréquence cardiaque", "BPM", hr)
+                add_chart(
+                    "hr",
+                    "Fréquence cardiaque",
+                    "BPM",
+                    hr,
+                    y_series_colors=hr_colors,
+                    y_axis_max_override=hr_max,
+                )
                 add_chart("power", "Puissance", "W", power)
             else:
-                add_chart("hr", "Fréquence cardiaque", "BPM", hr)
+                add_chart(
+                    "hr",
+                    "Fréquence cardiaque",
+                    "BPM",
+                    hr,
+                    y_series_colors=hr_colors,
+                    y_axis_max_override=hr_max,
+                )
                 add_chart("speed", "Vitesse", "km/h", speed_kmh)
                 add_chart("power", "Puissance", "W", power)
 

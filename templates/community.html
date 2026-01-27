@@ -2,28 +2,46 @@
 
 {% block content %}
   <section class="card">
-    <h1 style="margin-top:0;">Communauté</h1>
-    <div class="muted">Accède aux dashboards de tout le monde.</div>
+    <h1 style="margin-top:0;">{{ t('Communauté') }}</h1>
+    <div class="muted">{{ t('Accède aux dashboards de la communauté.') }}</div>
   </section>
 
   <div style="height: 16px;"></div>
 
   <section class="card" aria-label="Utilisateurs">
-    <h2 style="margin-top:0;">Dashboards</h2>
+    <h2 style="margin-top:0;">{{ t('Dashboards') }}</h2>
 
     {% if not users %}
-      <div class="muted">Aucun compte.</div>
+      <div class="muted">{{ t('Aucun compte.') }}</div>
     {% else %}
       <div style="display:grid; gap: 10px;">
         {% for u in users %}
           <div class="card card--muted" style="margin:0;">
             <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
               <div>
-                <div style="font-weight: 900;">{{ u.display_name }}</div>
+                <div style="font-weight: 900; display:flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <span>{{ u.display_name }}</span>
+                  {% if u.is_coach %}
+                    <span class="badge" title="Coach">Coach</span>
+                  {% endif %}
+                </div>
                 <div class="muted">{{ u.user_id }}</div>
               </div>
               <div style="display:flex; gap: 10px; flex-wrap: wrap;">
-                <a class="btn" href="{{ url_for('dashboard', user=u.user_id) }}">Voir dashboard</a>
+                <a class="btn" href="{{ url_for('dashboard', user=u.user_id) }}">{{ t('Voir dashboard') }}</a>
+                {% if is_coach and u.user_id != me %}
+                  {% if u.user_id in my_athletes %}
+                    <form method="post" action="{{ url_for('coach_remove_athlete') }}" style="margin:0;">
+                      <input type="hidden" name="athlete_user_id" value="{{ u.user_id }}" />
+                      <button class="btn btn--pink" type="submit">{{ t('Retirer athlète') }}</button>
+                    </form>
+                  {% else %}
+                    <form method="post" action="{{ url_for('coach_add_athlete') }}" style="margin:0;">
+                      <input type="hidden" name="athlete_user_id" value="{{ u.user_id }}" />
+                      <button class="btn" type="submit">{{ t('Ajouter athlète') }}</button>
+                    </form>
+                  {% endif %}
+                {% endif %}
               </div>
             </div>
           </div>

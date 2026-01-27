@@ -44,6 +44,20 @@ a:hover {
     text-decoration: underline;
 }
 
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text);
+    font-weight: 800;
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
 .site-header {
     background-color: var(--panel);
     border-bottom: 1px solid var(--border);
@@ -296,6 +310,11 @@ input:focus {
     font-size: 0.85rem;
 }
 
+/* Coach mode styling - slightly different background color */
+.page[data-coach-mode="true"] {
+    background: linear-gradient(135deg, rgba(26, 32, 57, 0.8) 0%, rgba(33, 45, 71, 0.8) 100%);
+}
+
 @media (min-width: 860px) {
     .graph-grid {
         grid-template-columns: 1fr 1fr;
@@ -308,3 +327,5 @@ input:focus {
         align-items: start;
     }
 }
+
+```

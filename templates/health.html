@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Santé - Garmin Tracker{% endblock %}
+{% block title %}{{ t('Santé') }} - Garmin Tracker{% endblock %}
 
 {% block head_extra %}
     <script defer src="{{ url_for('static', filename='progress.js') }}"></script>
@@ -8,17 +8,17 @@
 
 {% block content %}
     <div class="activity-header">
-        <h1 style="margin: 0;">Santé</h1>
+        <h1 style="margin: 0;">{{ t('Santé') }}</h1>
             <form method="post" action="{{ url_for('update_health') }}" class="sync-form">
-            <input name="garmin_password" type="password" placeholder="Mot de passe Garmin" required style="min-width: 220px;" />
-            <button class="btn" type="submit">Mettre à jour</button>
+            <input name="garmin_password" type="password" placeholder="{{ t('Mot de passe Garmin') }}" required style="min-width: 220px;" />
+            <button class="btn" type="submit">{{ t('Mettre à jour') }}</button>
         </form>
     </div>
 
     {% if task_id and task_status_url %}
-        <div class="card card--muted" id="task-progress" data-status-url="{{ task_status_url }}" data-redirect-url="{{ url_for('health') }}">
+        <div class="card card--muted" id="task-progress" data-status-url="{{ task_status_url }}" data-redirect-url="{{ url_for('health', user=viewing_user_id) }}">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                <strong>Mise à jour en cours</strong>
+                <strong>{{ t('Mise à jour en cours') }}</strong>
                 <span class="muted" data-progress-percent>0%</span>
             </div>
             <div style="height: 10px;"></div>
@@ -38,8 +38,8 @@
         </section>
     {% else %}
         <div class="card card--muted">
-            <strong>Graphiques indisponibles</strong>
-            <div class="muted">Clique sur “Mettre à jour” pour synchroniser ta santé.</div>
+            <strong>{{ t('Graphiques indisponibles') }}</strong>
+            <div class="muted">{{ t('Clique sur “Mettre à jour” pour synchroniser ta santé.') }}</div>
         </div>
     {% endif %}
 {% endblock %}

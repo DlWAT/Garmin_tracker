@@ -1,7 +1,19 @@
 import json
 import os
 import re
+import datetime as dt
 from typing import List, Literal, Optional, TypedDict
+
+
+def _format_pace_label(pace_minutes: float) -> str:
+    """Format pace value (minutes/km) to MM:SS format without decimals."""
+    try:
+        total_seconds = int(round(pace_minutes * 60))
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        return f"{minutes}:{seconds:02d}"
+    except Exception:
+        return str(pace_minutes)
 
 
 ECHARTS_CDN = "https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"
@@ -31,6 +43,11 @@ def write_timeseries_chart_html(
     y_ma: Optional[List[Optional[float]]] = None,
     y_ci: Optional[List[Optional[float]]] = None,
     y_bands: Optional[List[YBand]] = None,
+    y_ticks: Optional[List[float]] = None,
+    y_series_colors: Optional[List[Optional[str]]] = None,
+    is_pace_graph: bool = False,
+    y_axis_min_override: Optional[float] = None,
+    y_axis_max_override: Optional[float] = None,
     initial_window_days: int = 180,
     interaction: Literal["zoom", "fit"] = "zoom",
     primary_series: Literal["scatter", "line", "bar"] = "scatter",
@@ -76,6 +93,115 @@ def write_timeseries_chart_html(
                 lower.append(lo)
                 band.append(max(0.0, hi - lo))
 
+    # Compute a sensible Y range around observed values in the initial visible window.
+    def _numeric_values(series_list: list[list[Optional[float]]]) -> list[float]:
+        vals: list[float] = []
+        for serie in series_list:
+            if not serie:
+                continue
+            for v in serie:
+                if v is None:
+                    continue
+                try:
+                    vals.append(float(v))
+                except Exception:
+                    continue
+        return vals
+
+    def _parse_dt_prefix(s: str) -> Optional[dt.date]:
+        # Accept YYYY-MM[-DD][...] and ignore time portions
+        if not s:
+            return None
+        m = re.match(r"^([0-9]{4})-([0-9]{2})(?:-([0-9]{2}))?", str(s))
+        if not m:
+            return None
+        try:
+            year, month = int(m.group(1)), int(m.group(2))
+            day = int(m.group(3)) if m.group(3) else 1
+            return dt.date(year, month, day)
+        except Exception:
+            return None
+
+    def _window_mask() -> list[bool]:
+        n = len(x)
+        if n == 0:
+            return []
+        # Time axis: use last `initial_window_days` days.
+        if use_time_axis:
+            dates = [_parse_dt_prefix(v) for v in x]
+            valid_dates = [d for d in dates if d is not None]
+            if not valid_dates:
+                return [True] * n  # fallback to all if parsing fails
+            latest = max(valid_dates)
+            start = latest - dt.timedelta(days=max(0, int(initial_window_days) - 1))
+            mask: list[bool] = []
+            for d in dates:
+                mask.append(bool(d and d >= start))
+            # If all False (e.g., dates older than window), fallback to last N points
+            if not any(mask):
+                keep = min(n, int(initial_window_days) if initial_window_days else n)
+                mask = [False] * (n - keep) + [True] * keep
+            return mask
+        # Category axis: keep last N points (N ~ window days)
+        keep = min(n, int(initial_window_days) if initial_window_days else n)
+        return [False] * (n - keep) + [True] * keep
+
+    mask = _window_mask()
+
+    def _apply_mask(vals: Optional[list[Optional[float]]]) -> list[Optional[float]]:
+        if vals is None:
+            return []
+        return [v for v, keep in zip(vals, mask) if keep]
+
+    # Build an upper series if CI band was computed.
+    upper = None
+    if lower is not None and band is not None:
+        upper = []
+        for lo, width in zip(lower, band):
+            if lo is None or width is None:
+                upper.append(None)
+            else:
+                upper.append(lo + width)
+
+    window_vals = _numeric_values([
+        _apply_mask(y),
+        _apply_mask(y_ma) if y_ma is not None else [],
+        _apply_mask(lower) if lower is not None else [],
+        _apply_mask(upper) if upper is not None else [],
+    ])
+
+    all_vals = window_vals or _numeric_values([
+        y or [],
+        y_ma or [],
+        lower or [],
+        upper or [],
+    ])
+
+    y_axis_min = None
+    y_axis_max = None
+    
+    # Apply overrides if provided
+    if y_axis_min_override is not None:
+        y_axis_min = y_axis_min_override
+    if y_axis_max_override is not None:
+        y_axis_max = y_axis_max_override
+    
+    # Otherwise compute automatically
+    if y_axis_min is None or y_axis_max is None:
+        if all_vals:
+            v_min = min(all_vals)
+            v_max = max(all_vals)
+            if y_axis_min is None:
+                y_axis_min = 0.0
+            if y_axis_max is None:
+                if v_max == v_min:
+                    pad = max(1.0, abs(v_max) * 0.1)
+                    y_axis_max = v_max + pad
+                else:
+                    span = v_max - v_min
+                    pad = max(0.05 * span, 0.1)
+                    y_axis_max = v_max + pad
+
     option = {
         "backgroundColor": "transparent",
         "textStyle": {"color": "#EAF1FF"},
@@ -99,6 +225,8 @@ def write_timeseries_chart_html(
             "nameTextStyle": {"color": "rgba(234, 241, 255, 0.72)"},
             "axisLabel": {"color": "rgba(234, 241, 255, 0.72)"},
             "splitLine": {"lineStyle": {"color": "rgba(234, 241, 255, 0.08)"}},
+            **({"min": y_axis_min, "max": y_axis_max} if y_axis_min is not None and y_axis_max is not None else {}),
+            **({"interval": y_ticks[1] - y_ticks[0] if len(y_ticks) > 1 else 0.5} if y_ticks else {}),
         },
         "series": [],
     }
@@ -135,16 +263,37 @@ def write_timeseries_chart_html(
         ]
 
     def _primary_series_obj() -> dict:
+        # Build data with optional per-point colors
+        if use_time_axis:
+            data_pairs = _pair_series(x, y)
+            if y_series_colors:
+                # Add color to each point if colors provided
+                data_with_colors = []
+                for i, pair in enumerate(data_pairs):
+                    item_color = y_series_colors[i] if i < len(y_series_colors) else None
+                    if item_color and pair[1] is not None:  # Only color if value exists
+                        data_with_colors.append({
+                            "value": pair,
+                            "itemStyle": {"color": item_color, "opacity": 0.9}
+                        })
+                    else:
+                        data_with_colors.append(pair)
+                data = data_with_colors
+            else:
+                data = data_pairs
+        else:
+            data = y
+        
         base = {
             "name": "Raw",
             "type": primary_series,
-            "data": _pair_series(x, y) if use_time_axis else y,
+            "data": data,
         }
         if primary_series == "scatter":
             base.update(
                 {
                     "symbolSize": 5,
-                    "itemStyle": {"color": color, "opacity": 0.9},
+                    "itemStyle": {"color": color, "opacity": 0.9} if not y_series_colors else {},
                 }
             )
         elif primary_series == "line":
@@ -165,18 +314,31 @@ def write_timeseries_chart_html(
         return base
 
     raw_series = _primary_series_obj()
+    
+    # Add HR zone bands if provided - they span the entire X range
     if y_bands:
-        raw_series["markArea"] = {
-            "silent": True,
-            "label": {"show": False},
-            "data": [
-                [
-                    {"yAxis": float(b["low"]), "itemStyle": {"color": b["color"]}},
-                    {"yAxis": float(b["high"])},
-                ]
-                for b in y_bands
-            ],
-        }
+        # Get X-axis range for band coverage
+        x_min = x[0] if x else 0
+        x_max = x[-1] if x else 100
+        
+        for b in y_bands:
+            option["series"].append({
+                "type": "scatter",
+                "data": [],
+                "symbolSize": 0,
+                "z": 0,
+                "markArea": {
+                    "silent": True,
+                    "label": {"show": False},
+                    "data": [
+                        [
+                            {"xAxis": x_min, "yAxis": float(b["low"]), "itemStyle": {"color": b["color"]}},
+                            {"xAxis": x_max, "yAxis": float(b["high"])},
+                        ]
+                    ],
+                },
+            })
+    
     option["series"].append(raw_series)
 
     if y_ma is not None:
