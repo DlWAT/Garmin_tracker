@@ -5,37 +5,38 @@
 {% endblock %}
 
 {% block content %}
+    {# ── Dashboard header + filters ───────────────────────────────── #}
     <section class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
+        <div class="flex-between" style="margin-bottom: 20px;">
             <div>
                 <h1 style="margin: 0 0 6px 0; font-size: 2rem; font-weight: 900;">{{ t('Dashboard') }}</h1>
-                <div class="muted" style="font-size: 1rem;">
+                <div class="muted">
                     <span style="font-weight: 600;">{{ period_label }}</span>
                     {% if viewing_user_id and user_id and viewing_user_id != user_id %}
                         &nbsp;•&nbsp;{{ t('Vue') }}: {{ viewing_user_id }}
                     {% endif %}
                 </div>
             </div>
-            <div style="display:flex; gap: 8px;">
-                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=prev_anchor, user=viewing_user_id, sport=sport) }}" style="min-width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">◀</a>
-                <a class="btn" href="{{ url_for('dashboard', period=period, anchor=next_anchor, user=viewing_user_id, sport=sport) }}" style="min-width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">▶</a>
+            <div class="flex-end">
+                <a class="btn btn--icon" href="{{ url_for('dashboard', period=period, anchor=prev_anchor, user=viewing_user_id, sport=sport) }}" title="{{ t('Période précédente') }}">◀</a>
+                <a class="btn btn--icon" href="{{ url_for('dashboard', period=period, anchor=next_anchor, user=viewing_user_id, sport=sport) }}" title="{{ t('Période suivante') }}">▶</a>
             </div>
         </div>
 
-        <form method="get" action="{{ url_for('dashboard') }}" style="display:flex; gap: 12px; flex-wrap: wrap; align-items: end;">
+        <form method="get" action="{{ url_for('dashboard') }}" class="filter-form">
             <input type="hidden" name="user" value="{{ viewing_user_id }}" />
-            <div class="field" style="margin:0; min-width: 180px; flex: 1;">
-                <label for="period" style="font-weight: 600; margin-bottom: 6px; display: block;">{{ t('Période') }}</label>
-                <select id="period" name="period" style="width:100%; padding:11px 14px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); font-size: 0.95rem;">
+            <div class="field">
+                <label for="period">{{ t('Période') }}</label>
+                <select id="period" name="period">
                     <option value="week" {% if period == 'week' %}selected{% endif %}>{{ t('Semaine') }}</option>
                     <option value="month" {% if period == 'month' %}selected{% endif %}>{{ t('Mois') }}</option>
                     <option value="year" {% if period == 'year' %}selected{% endif %}>{{ t('Année') }}</option>
                 </select>
             </div>
 
-            <div class="field" style="margin:0; min-width: 180px; flex: 1;">
-                <label for="sport" style="font-weight: 600; margin-bottom: 6px; display: block;">{{ t('Sport') }}</label>
-                <select id="sport" name="sport" style="width:100%; padding:11px 14px; border-radius:10px; border:1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); font-size: 0.95rem;">
+            <div class="field">
+                <label for="sport">{{ t('Sport') }}</label>
+                <select id="sport" name="sport">
                     <option value="all" {% if sport == 'all' or not sport %}selected{% endif %}>{{ t('Tous') }}</option>
                     {% for s in available_sports %}
                         <option value="{{ s }}" {% if sport == s %}selected{% endif %}>{{ s }}</option>
@@ -43,92 +44,93 @@
                 </select>
             </div>
 
-            <div class="field" style="margin:0; min-width: 180px; flex: 1;">
-                <label for="anchor" style="font-weight: 600; margin-bottom: 6px; display: block;">{{ t('Date') }}</label>
-                <input id="anchor" name="anchor" type="date" value="{{ anchor }}" style="padding:11px 14px; font-size: 0.95rem;" />
+            <div class="field">
+                <label for="anchor">{{ t('Date') }}</label>
+                <input id="anchor" name="anchor" type="date" value="{{ anchor }}" />
             </div>
 
-            <button class="btn btn--pink" type="submit" style="height: 44px; padding: 0 20px; font-weight: 600;">{{ t('Afficher') }}</button>
-            <a class="btn" href="{{ url_for('profile') }}" style="height: 44px; padding: 0 20px; display: flex; align-items: center;">{{ t('Régler zones') }}</a>
+            <button class="btn btn--pink" type="submit" style="height: 44px; padding: 0 20px;">{{ t('Afficher') }}</button>
+            <a class="btn btn--icon" href="{{ url_for('profile') }}" style="height: 44px; padding: 0 16px; display: inline-flex; align-items: center;">{{ t('Régler zones') }}</a>
         </form>
     </section>
 
-    <div style="height: 20px;"></div>
+    <div class="spacer"></div>
 
-    <section class="card" aria-label="Prochainements">
-        <h2 style="margin: 0 0 16px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Prochainements') }}</h2>
+    {# ── Prochainements ───────────────────────────────────────────── #}
+    <section class="card" aria-label="{{ t('Prochainements') }}">
+        <h2 class="section-header">{{ t('Prochainements') }}</h2>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+        <div class="events-grid">
+            {# Prochains entraînements #}
             <div>
-                <div style="font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; color: var(--text);">{{ t('Prochains entraînements') }}</div>
+                <div class="section-title">{{ t('Prochains entraînements') }}</div>
                 {% if next_trainings and next_trainings|length %}
                     <ul style="list-style: none; padding: 0; margin: 0;">
                         {% for t in next_trainings %}
                             {% set rpe_val = t.get('rpe') %}
-                            {% set bg_style = '' %}
                             {% if rpe_val is not none %}
                                 {% if rpe_val <= 3 %}
-                                    {% set bg_style = 'background: rgba(34, 197, 94, 0.1); border-left: 3px solid rgba(34, 197, 94, 0.6);' %}
+                                    {% set card_class = 'event-card event-card--low' %}
                                 {% elif rpe_val <= 6 %}
-                                    {% set bg_style = 'background: rgba(234, 179, 8, 0.1); border-left: 3px solid rgba(234, 179, 8, 0.6);' %}
+                                    {% set card_class = 'event-card event-card--mid' %}
                                 {% else %}
-                                    {% set bg_style = 'background: rgba(239, 68, 68, 0.1); border-left: 3px solid rgba(239, 68, 68, 0.6);' %}
+                                    {% set card_class = 'event-card event-card--high' %}
                                 {% endif %}
                             {% else %}
-                                {% set bg_style = 'background: rgba(8, 12, 22, 0.5); border-left: 3px solid rgba(76, 201, 240, 0.4);' %}
+                                {% set card_class = 'event-card' %}
                             {% endif %}
-                            <li style="{{ bg_style }} border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+                            <li class="{{ card_class }}">
                                 {% if viewing_user_id == user_id %}
-                                    <a href="{{ url_for('training_detail', training_id=t.id) }}" style="text-decoration: none; color: var(--text); font-weight: 700; font-size: 1rem; display: block;">
+                                    <a class="event-card__title" href="{{ url_for('training_detail', training_id=t.id) }}">
                                         {{ t.date }} — {{ t.title }}
                                     </a>
                                 {% else %}
-                                    <strong style="color: var(--text); font-size: 1rem; display: block;">{{ t.date }} — {{ t.title }}</strong>
+                                    <strong class="event-card__title">{{ t.date }} — {{ t.title }}</strong>
                                 {% endif %}
-                                <div class="muted" style="margin-top: 6px; font-size: 0.9rem;">
+                                <div class="event-card__meta muted">
                                     {{ t.sport_label }}
                                     {% if t.distance_km is not none %}
                                         &nbsp;•&nbsp;{{ "%.1f"|format(t.distance_km|float) }} km
                                     {% endif %}
                                 </div>
                                 {% if t.description %}
-                                    <div class="muted" style="margin-top: 6px; font-size: 0.88rem; line-height: 1.4;">{{ t.description }}</div>
+                                    <div class="event-card__desc muted">{{ t.description }}</div>
                                 {% endif %}
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="muted" style="padding: 16px; background: rgba(8, 12, 22, 0.5); border-radius: 10px; text-align: center;">{{ t('Aucun entraînement planifié.') }}</div>
+                    <div class="empty-state">{{ t('Aucun entraînement planifié.') }}</div>
                 {% endif %}
             </div>
 
+            {# Prochaines compétitions #}
             <div>
-                <div style="font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; color: var(--text);">{{ t('Prochaines compétitions') }}</div>
+                <div class="section-title">{{ t('Prochaines compétitions') }}</div>
                 {% if next_competitions and next_competitions|length %}
                     <ul style="list-style: none; padding: 0; margin: 0;">
                         {% for c in next_competitions %}
                             {% set rpe_val = c.get('rpe') %}
-                            {% set bg_style = '' %}
                             {% if rpe_val is not none %}
                                 {% if rpe_val <= 3 %}
-                                    {% set bg_style = 'background: rgba(34, 197, 94, 0.1); border-left: 3px solid rgba(34, 197, 94, 0.6);' %}
+                                    {% set card_class = 'event-card event-card--low' %}
                                 {% elif rpe_val <= 6 %}
-                                    {% set bg_style = 'background: rgba(234, 179, 8, 0.1); border-left: 3px solid rgba(234, 179, 8, 0.6);' %}
+                                    {% set card_class = 'event-card event-card--mid' %}
                                 {% else %}
-                                    {% set bg_style = 'background: rgba(239, 68, 68, 0.1); border-left: 3px solid rgba(239, 68, 68, 0.6);' %}
+                                    {% set card_class = 'event-card event-card--high' %}
                                 {% endif %}
                             {% else %}
-                                {% set bg_style = 'background: rgba(8, 12, 22, 0.5); border-left: 3px solid rgba(76, 201, 240, 0.4);' %}
+                                {% set card_class = 'event-card' %}
                             {% endif %}
-                            <li style="{{ bg_style }} border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+                            <li class="{{ card_class }}">
                                 {% if viewing_user_id == user_id %}
-                                    <a href="{{ url_for('competition_detail', competition_id=c.id) }}" style="text-decoration: none; color: var(--text); font-weight: 700; font-size: 1rem; display: block;">
+                                    <a class="event-card__title" href="{{ url_for('competition_detail', competition_id=c.id) }}">
                                         {{ c.date }} — {{ c.name }}
                                     </a>
                                 {% else %}
-                                    <strong style="color: var(--text); font-size: 1rem; display: block;">{{ c.date }} — {{ c.name }}</strong>
+                                    <strong class="event-card__title">{{ c.date }} — {{ c.name }}</strong>
                                 {% endif %}
-                                <div class="muted" style="margin-top: 6px; font-size: 0.9rem;">
+                                <div class="event-card__meta muted">
                                     {{ c.sport_label }}
                                     {% if c.distance is not none %}
                                         &nbsp;•&nbsp;{{ c.distance }} km
@@ -141,17 +143,18 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="muted" style="padding: 16px; background: rgba(8, 12, 22, 0.5); border-radius: 10px; text-align: center;">{{ t('Aucune compétition planifiée.') }}</div>
+                    <div class="empty-state">{{ t('Aucune compétition planifiée.') }}</div>
                 {% endif %}
             </div>
         </div>
     </section>
 
-    <div style="height: 20px;"></div>
+    <div class="spacer"></div>
 
-    <section class="card" aria-label="Compte rendu">
-        <h2 style="margin: 0 0 12px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Compte rendu') }}</h2>
-        <div style="background: rgba(76, 201, 240, 0.08); border-left: 3px solid rgba(76, 201, 240, 0.6); border-radius: 10px; padding: 16px; margin-bottom: 12px;">
+    {# ── Compte rendu d'intensité ─────────────────────────────────── #}
+    <section class="card" aria-label="{{ t('Compte rendu') }}">
+        <h2 class="section-header">{{ t('Compte rendu') }}</h2>
+        <div class="info-box" style="margin-bottom: 12px;">
             <div style="font-weight: 600; font-size: 1.05rem;">{{ intensity_summary }}</div>
         </div>
         {% if report_lines and report_lines|length %}
@@ -162,35 +165,36 @@
             <div class="muted" style="padding-left: 12px;">{{ t('Temps cumulé') }}: {{ total_time }}</div>
         {% endif %}
         <div style="height: 8px;"></div>
-        <div class="muted" style="font-size: 0.88rem; padding: 12px; background: rgba(8, 12, 22, 0.5); border-radius: 8px;">💡 {{ t('Conseil: ajuste tes zones dans Profil pour fiabiliser les répartitions.') }}</div>
+        <div class="info-box" style="font-size: 0.88rem;">{{ t('Conseil: ajuste tes zones dans Profil pour fiabiliser les répartitions.') }}</div>
     </section>
 
-    <div style="height: 20px;"></div>
+    <div class="spacer"></div>
 
-    <section class="card" aria-label="Par sport">
-        <h2 style="margin: 0 0 16px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Par sport') }}</h2>
+    {# ── Par sport ────────────────────────────────────────────────── #}
+    <section class="card" aria-label="{{ t('Par sport') }}">
+        <h2 class="section-header">{{ t('Par sport') }}</h2>
         {% if not sport_rows %}
-            <div class="muted" style="padding: 16px; background: rgba(8, 12, 22, 0.5); border-radius: 10px; text-align: center;">{{ t('Aucune activité sur la période.') }}</div>
+            <div class="empty-state">{{ t('Aucune activité sur la période.') }}</div>
         {% else %}
-            <div style="overflow:auto;">
-                <table style="width:100%; border-collapse: collapse;">
+            <div style="overflow: auto;">
+                <table>
                     <thead>
-                        <tr class="muted" style="text-align:left; border-bottom: 2px solid rgba(76, 201, 240, 0.2);">
-                            <th style="padding:12px 8px; font-weight: 700;">Sport</th>
-                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Séances') }}</th>
-                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Temps') }}</th>
-                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Distance') }}</th>
-                            <th style="padding:12px 8px; font-weight: 700;">{{ t('Charge') }}</th>
+                        <tr>
+                            <th>{{ t('Sport') }}</th>
+                            <th>{{ t('Séances') }}</th>
+                            <th>{{ t('Temps') }}</th>
+                            <th>{{ t('Distance') }}</th>
+                            <th>{{ t('Charge') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for r in sport_rows %}
-                            <tr style="border-top: 1px solid rgba(234, 241, 255, 0.08); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(76, 201, 240, 0.05)'" onmouseout="this.style.background=''">
-                                <td style="padding:12px 8px; font-weight: 700;">{{ r.sport }}</td>
-                                <td style="padding:12px 8px;">{{ r.count }}</td>
-                                <td style="padding:12px 8px;">{{ r.time }}</td>
-                                <td style="padding:12px 8px;">{{ r.km }} km</td>
-                                <td style="padding:12px 8px; font-weight: 600;">{{ r.load }}</td>
+                            <tr>
+                                <td style="font-weight: 700;">{{ r.sport }}</td>
+                                <td>{{ r.count }}</td>
+                                <td>{{ r.time }}</td>
+                                <td>{{ r.km }} km</td>
+                                <td style="font-weight: 600;">{{ r.load }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -200,43 +204,44 @@
     </section>
 
     {% if dashboard_graphs and dashboard_graphs|length %}
-        <div style="height: 20px;"></div>
-        <section class="card" aria-label="Graphiques">
-            <h2 style="margin: 0 0 16px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Graphiques') }}</h2>
+        <div class="spacer"></div>
+        <section class="card" aria-label="{{ t('Graphiques') }}">
+            <h2 class="section-header">{{ t('Graphiques') }}</h2>
             <section class="graph-grid">
                 {% for g in dashboard_graphs %}
-                    <iframe class="graph-frame" loading="lazy" src="{{ g.url }}" title="{{ g.title }}" style="border: 1px solid rgba(76, 201, 240, 0.15); border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);"></iframe>
+                    <iframe class="graph-frame" loading="lazy" src="{{ g.url }}" title="{{ g.title }}"></iframe>
                 {% endfor %}
             </section>
         </section>
     {% endif %}
 
-    <div style="height: 20px;"></div>
+    <div class="spacer"></div>
 
-    <section class="card" aria-label="Zones FC">
+    {# ── Zones fréquence cardiaque ─────────────────────────────────── #}
+    <section class="card" aria-label="{{ t('Zones FC') }}">
         <div style="margin-bottom: 16px;">
-            <h2 style="margin: 0 0 8px 0; font-size: 1.5rem; font-weight: 800;">{{ t('Zones de fréquence cardiaque') }}</h2>
+            <h2 class="section-header" style="margin-bottom: 8px;">{{ t('Zones de fréquence cardiaque') }}</h2>
             {% if not zones %}
-                <div class="muted" style="padding: 12px; background: rgba(239, 68, 68, 0.1); border-left: 3px solid rgba(239, 68, 68, 0.6); border-radius: 8px;">
-                    ⚠️ {{ t('Définis ta FC max et tes zones dans Profil.') }}
+                <div class="info-box info-box--danger">
+                    {{ t('Définis ta FC max et tes zones dans Profil.') }}
                 </div>
             {% elif zones_inferred %}
-                <div class="muted" style="padding: 12px; background: rgba(234, 179, 8, 0.1); border-left: 3px solid rgba(234, 179, 8, 0.6); border-radius: 8px;">
-                    💡 {{ t('Zones estimées (FC max observée: {fcmax}). Règle Profil pour fiabiliser.', fcmax=fcmax_used) }}
+                <div class="info-box info-box--warning">
+                    {{ t('Zones estimées (FC max observée: {fcmax}). Règle Profil pour fiabiliser.', fcmax=fcmax_used) }}
                 </div>
             {% endif %}
         </div>
 
         {% if zone_dist %}
             <div class="muted" style="margin-bottom: 8px; font-weight: 600; font-size: 0.95rem;">{{ t('Répartition (temps, %)') }}</div>
-            <div class="zone-scale" role="img" aria-label="Répartition zones fréquence cardiaque (temps)" style="border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
+            <div class="zone-scale" role="img" aria-label="{{ t('Répartition zones fréquence cardiaque') }}">
                 {% for seg in zone_dist %}
                     <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
                 {% endfor %}
             </div>
-            <div class="zone-scale__labels" style="margin-top: 8px;">
+            <div class="zone-scale__labels">
                 {% for seg in zone_dist %}
-                    <div class="zone-scale__label" style="font-weight: 600;">{{ seg.short }}</div>
+                    <div class="zone-scale__label">{{ seg.short }}</div>
                 {% endfor %}
             </div>
             <div style="height: 20px;"></div>
@@ -244,14 +249,14 @@
 
         {% if zone_target %}
             <div class="muted" style="margin-bottom: 8px; font-weight: 600; font-size: 0.95rem;">{{ t('Objectif (référence)') }}</div>
-            <div class="zone-scale" role="img" aria-label="Objectif de répartition zones fréquence cardiaque" style="border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
+            <div class="zone-scale" role="img" aria-label="{{ t('Objectif zones fréquence cardiaque') }}">
                 {% for seg in zone_target %}
                     <div class="zone-scale__seg" style="flex: {{ seg.flex }}; background: {{ seg.color }};" title="{{ seg.label }}"></div>
                 {% endfor %}
             </div>
-            <div class="zone-scale__labels" style="margin-top: 8px;">
+            <div class="zone-scale__labels">
                 {% for seg in zone_target %}
-                    <div class="zone-scale__label" style="font-weight: 600;">{{ seg.short }}</div>
+                    <div class="zone-scale__label">{{ seg.short }}</div>
                 {% endfor %}
             </div>
             <div style="height: 20px;"></div>

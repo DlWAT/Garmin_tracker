@@ -3,7 +3,7 @@ from __future__ import annotations
 import secrets
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 @dataclass(frozen=True)
@@ -27,7 +27,7 @@ class InMemoryCredentialsStore:
     def create_session(self, creds: GarminCredentials) -> str:
         token = secrets.token_urlsafe(32)
         with self._lock:
-            self._items[token] = (creds, datetime.utcnow())
+            self._items[token] = (creds, datetime.now(timezone.utc))
         return token
 
     def get(self, token: str | None) -> GarminCredentials | None:
@@ -38,7 +38,7 @@ class InMemoryCredentialsStore:
             if not item:
                 return None
             creds, created_at = item
-            if datetime.utcnow() - created_at > self._ttl:
+            if datetime.now(timezone.utc) - created_at > self._ttl:
                 self._items.pop(token, None)
                 return None
             return creds
@@ -50,7 +50,7 @@ class InMemoryCredentialsStore:
             self._items.pop(token, None)
 
     def cleanup(self) -> None:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         with self._lock:
             expired = [k for k, (_, t0) in self._items.items() if now - t0 > self._ttl]
             for k in expired:

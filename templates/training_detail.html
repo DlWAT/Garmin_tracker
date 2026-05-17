@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Entraînement - {{ t.title }}{% endblock %}
+{% block title %}Entraînement - {{ tr.title }}{% endblock %}
 
 {% block head_extra %}
   <link rel="stylesheet" href="{{ url_for('static', filename='training.css') }}">
@@ -8,54 +8,54 @@
 
 {% block content %}
   <div class="training-header">
-    <h1 style="margin: 0;">{{ t.title }}</h1>
+    <h1 style="margin: 0;">{{ tr.title }}</h1>
   </div>
 
   <main class="container" style="display:block;">
     <section class="calendar-container" style="margin-bottom: 20px;">
       <p style="margin: 0 0 10px 0; color: var(--muted-text);">
-        <b>Date</b>: {{ t.date }}
+        <b>Date</b>: {{ tr.date }}
         &nbsp;•&nbsp;
         <b>Sport</b>: {{ sport_label }}
-        {% if t.distance_km is not none %}
+        {% if tr.get('distance_km') is not none %}
           &nbsp;•&nbsp;
-          <b>Distance</b>: {{ "%.1f"|format(t.distance_km) }} km
+          <b>Distance</b>: {{ "%.1f"|format(tr.get('distance_km')) }} km
         {% endif %}
       </p>
 
       <p style="margin: 0 0 8px 0; color: var(--text);">
-        <b>Réalisé</b>: {% if linked_activity_id or t.done %}oui{% else %}non{% endif %}
+        <b>Réalisé</b>: {% if linked_activity_id or tr.done %}oui{% else %}non{% endif %}
       </p>
 
-      {% if t.notes %}
-        <p style="margin: 0 0 8px 0; color: var(--text);"><b>Remarques</b>: {{ t.notes }}</p>
+      {% if tr.notes %}
+        <p style="margin: 0 0 8px 0; color: var(--text);"><b>Remarques</b>: {{ tr.notes }}</p>
       {% endif %}
 
-      {% if t.feeling %}
-        <p style="margin: 0 0 8px 0; color: var(--text);"><b>{{ t('Ressenti') }}</b>: {{ t.feeling }}</p>
+      {% if tr.feeling %}
+        <p style="margin: 0 0 8px 0; color: var(--text);"><b>{{ t('Ressenti') }}</b>: {{ tr.feeling }}</p>
       {% endif %}
 
-      {% if t.rpe is not none or t.rpe_cardio is not none or t.rpe_muscle is not none or t.rpe_technique is not none %}
+      {% if tr.get('rpe') is not none or tr.get('rpe_cardio') is not none or tr.get('rpe_muscle') is not none or tr.get('rpe_technique') is not none %}
         <p style="margin: 0 0 8px 0; color: var(--text);"><b>{{ t('RPE') }}</b>:
-          {% if t.rpe is not none %}{{ t('RPE global') }} {{ '%.1f'|format(t.rpe) }}{% endif %}
-          {% if t.rpe_cardio is not none %}&nbsp;•&nbsp;{{ t('RPE cardio') }} {{ '%.1f'|format(t.rpe_cardio) }}{% endif %}
-          {% if t.rpe_muscle is not none %}&nbsp;•&nbsp;{{ t('RPE musculaire') }} {{ '%.1f'|format(t.rpe_muscle) }}{% endif %}
-          {% if t.rpe_technique is not none %}&nbsp;•&nbsp;{{ t('RPE technique') }} {{ '%.1f'|format(t.rpe_technique) }}{% endif %}
+          {% if tr.get('rpe') is not none %}{{ t('RPE global') }} {{ '%.1f'|format(tr.get('rpe')) }}{% endif %}
+          {% if tr.get('rpe_cardio') is not none %}&nbsp;•&nbsp;{{ t('RPE cardio') }} {{ '%.1f'|format(tr.get('rpe_cardio')) }}{% endif %}
+          {% if tr.get('rpe_muscle') is not none %}&nbsp;•&nbsp;{{ t('RPE musculaire') }} {{ '%.1f'|format(tr.get('rpe_muscle')) }}{% endif %}
+          {% if tr.get('rpe_technique') is not none %}&nbsp;•&nbsp;{{ t('RPE technique') }} {{ '%.1f'|format(tr.get('rpe_technique')) }}{% endif %}
         </p>
       {% endif %}
 
-      {% if t.post_notes %}
-        <p style="margin: 0 0 8px 0; color: var(--text);"><b>{{ t('Remarques après séance') }}</b>: {{ t.post_notes }}</p>
+      {% if tr.post_notes %}
+        <p style="margin: 0 0 8px 0; color: var(--text);"><b>{{ t('Remarques après séance') }}</b>: {{ tr.post_notes }}</p>
       {% endif %}
 
-      {% if t.description %}
+      {% if tr.description %}
         <h2 style="margin: 10px 0;">Description</h2>
-        <p style="margin: 0; color: var(--text);">{{ t.description }}</p>
+        <p style="margin: 0; color: var(--text);">{{ tr.description }}</p>
       {% endif %}
 
-      {% if t.content %}
+      {% if tr.content %}
         <h2 style="margin: 20px 0 10px 0;">Contenu</h2>
-        <pre style="white-space: pre-wrap; margin: 0; background: var(--muted-card); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: var(--text);">{{ t.content }}</pre>
+        <pre style="white-space: pre-wrap; margin: 0; background: var(--muted-card); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: var(--text);">{{ tr.content }}</pre>
       {% endif %}
 
       {% if linked_activity_id %}
@@ -66,6 +66,37 @@
             <span class="muted">• {{ linked_activity_name }}</span>
           {% endif %}
         </p>
+      {% endif %}
+
+      {% if user_id and viewing_user_id and user_id == viewing_user_id and tr.sport == 'running' %}
+        <h2 style="margin: 20px 0 10px 0;">{{ t('Envoyer sur Garmin Connect') }}</h2>
+
+        {% if tr.garmin_workout_id %}
+          <div class="info-box info-box--success" style="margin-bottom: 12px;">
+            {{ t('Workout déjà envoyé sur Garmin Connect') }} (ID: <code>{{ tr.garmin_workout_id }}</code>)
+            {% if tr.garmin_scheduled_date %}
+              &nbsp;•&nbsp;{{ t('Planifié le') }} {{ tr.garmin_scheduled_date }}
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('send_training_to_garmin_route', training_id=tr.id) }}" style="background: rgba(8, 12, 22, 0.4); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+          <p class="muted" style="margin: 0 0 12px 0; font-size: 0.92rem;">
+            {{ t('Crée un workout structuré sur ton compte Garmin Connect. Il sera visible sur ta montre Garmin.') }}
+          </p>
+          <div class="info-box" style="margin-bottom:10px; font-size:0.85rem;">
+            Si tu as synchronisé tes activités récemment (moins de 20 min), laisse le mot de passe vide — la session est encore active.
+          </div>
+          <div class="field" style="margin: 0 0 12px 0;">
+            <label for="garmin_pwd_workout">{{ t('Mot de passe Garmin Connect') }} <span class="muted" style="font-weight:400;">(optionnel si session active)</span></label>
+            <input type="password" id="garmin_pwd_workout" name="garmin_password" autocomplete="current-password" placeholder="Laisser vide si session récente" />
+          </div>
+          <div class="field" style="margin: 0 0 12px 0;">
+            <label for="schedule_date">{{ t('Planifier le') }} <span class="muted">({{ t('optionnel — laisse vide pour ne pas planifier') }})</span></label>
+            <input type="date" id="schedule_date" name="schedule_date" value="{{ tr.date or '' }}" />
+          </div>
+          <button class="btn" type="submit">{{ t('Envoyer sur Garmin Connect') }}</button>
+        </form>
       {% endif %}
 
       {% if user_id and viewing_user_id and user_id == viewing_user_id %}
@@ -82,25 +113,25 @@
           .rpe-legend { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--muted-text); margin-top: 6px; }
         </style>
         
-        <form method="post" action="{{ url_for('training_feedback', training_id=t.id, user=viewing_user_id) }}">
+        <form method="post" action="{{ url_for('training_feedback', training_id=tr.id, user=viewing_user_id) }}">
           <div class="field">
             <label style="display:flex; align-items:center; gap: 10px;">
-              <input type="checkbox" name="done" {% if linked_activity_id or t.done %}checked{% endif %} />
+              <input type="checkbox" name="done" {% if linked_activity_id or tr.get('done') %}checked{% endif %} />
               <span>{{ t('Réalisé') }}</span>
             </label>
           </div>
 
           <div class="field">
             <label for="feeling">{{ t('Ressenti') }}</label>
-            <input id="feeling" name="feeling" type="text" value="{{ t.feeling or '' }}" placeholder="Ex: jambes lourdes, facile, dur…" />
+            <input id="feeling" name="feeling" type="text" value="{{ tr.get('feeling') or '' }}" placeholder="Ex: jambes lourdes, facile, dur…" />
           </div>
 
           <div class="rpe-slider-container">
             <div class="rpe-slider-header">
               <label for="rpe">{{ t('RPE global') }}</label>
-              <span class="rpe-slider-value" id="rpe-value">{{ t.rpe if t.rpe is not none else 5 }}</span>
+              <span class="rpe-slider-value" id="rpe-value">{{ tr.get('rpe') if tr.get('rpe') is not none else 5 }}</span>
             </div>
-            <input id="rpe" name="rpe" type="range" min="0" max="10" step="0.5" value="{{ t.rpe if t.rpe is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-value').textContent=this.value; updateRpeHint('rpe-hint', this.value)" />
+            <input id="rpe" name="rpe" type="range" min="0" max="10" step="0.5" value="{{ tr.get('rpe') if tr.get('rpe') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-value').textContent=this.value; updateRpeHint('rpe-hint', this.value)" />
             <div class="rpe-hint" id="rpe-hint"></div>
             <div class="rpe-legend"><span>0: {{ t('Repos') }}</span><span>5: {{ t('Modéré') }}</span><span>10: {{ t('Maximum') }}</span></div>
           </div>
@@ -110,9 +141,9 @@
               <div class="rpe-slider-container">
                 <div class="rpe-slider-header">
                   <label for="rpe_cardio">{{ t('RPE cardio') }}</label>
-                  <span class="rpe-slider-value" id="rpe-cardio-value">{{ t.rpe_cardio if t.rpe_cardio is not none else 5 }}</span>
+                   <span class="rpe-slider-value" id="rpe-cardio-value">{{ tr.get('rpe_cardio') if tr.get('rpe_cardio') is not none else 5 }}</span>
                 </div>
-                <input id="rpe_cardio" name="rpe_cardio" type="range" min="0" max="10" step="0.5" value="{{ t.rpe_cardio if t.rpe_cardio is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-cardio-value').textContent=this.value; updateRpeHint('rpe-cardio-hint', this.value, 'cardio')" />
+                <input id="rpe_cardio" name="rpe_cardio" type="range" min="0" max="10" step="0.5" value="{{ tr.get('rpe_cardio') if tr.get('rpe_cardio') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-cardio-value').textContent=this.value; updateRpeHint('rpe-cardio-hint', this.value, 'cardio')" />
                 <div class="rpe-hint" id="rpe-cardio-hint"></div>
               </div>
             </div>
@@ -120,9 +151,9 @@
               <div class="rpe-slider-container">
                 <div class="rpe-slider-header">
                   <label for="rpe_muscle">{{ t('RPE musculaire') }}</label>
-                  <span class="rpe-slider-value" id="rpe-muscle-value">{{ t.rpe_muscle if t.rpe_muscle is not none else 5 }}</span>
+                   <span class="rpe-slider-value" id="rpe-muscle-value">{{ tr.get('rpe_muscle') if tr.get('rpe_muscle') is not none else 5 }}</span>
                 </div>
-                <input id="rpe_muscle" name="rpe_muscle" type="range" min="0" max="10" step="0.5" value="{{ t.rpe_muscle if t.rpe_muscle is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-muscle-value').textContent=this.value; updateRpeHint('rpe-muscle-hint', this.value, 'muscle')" />
+                <input id="rpe_muscle" name="rpe_muscle" type="range" min="0" max="10" step="0.5" value="{{ tr.get('rpe_muscle') if tr.get('rpe_muscle') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-muscle-value').textContent=this.value; updateRpeHint('rpe-muscle-hint', this.value, 'muscle')" />
                 <div class="rpe-hint" id="rpe-muscle-hint"></div>
               </div>
             </div>
@@ -130,9 +161,9 @@
               <div class="rpe-slider-container">
                 <div class="rpe-slider-header">
                   <label for="rpe_technique">{{ t('RPE technique') }}</label>
-                  <span class="rpe-slider-value" id="rpe-technique-value">{{ t.rpe_technique if t.rpe_technique is not none else 5 }}</span>
+                  <span class="rpe-slider-value" id="rpe-technique-value">{{ tr.get('rpe_technique') if tr.get('rpe_technique') is not none else 5 }}</span>
                 </div>
-                <input id="rpe_technique" name="rpe_technique" type="range" min="0" max="10" step="0.5" value="{{ t.rpe_technique if t.rpe_technique is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-technique-value').textContent=this.value; updateRpeHint('rpe-technique-hint', this.value, 'technique')" />
+                <input id="rpe_technique" name="rpe_technique" type="range" min="0" max="10" step="0.5" value="{{ tr.get('rpe_technique') if tr.get('rpe_technique') is not none else 5 }}" class="rpe-slider" oninput="document.getElementById('rpe-technique-value').textContent=this.value; updateRpeHint('rpe-technique-hint', this.value, 'technique')" />
                 <div class="rpe-hint" id="rpe-technique-hint"></div>
               </div>
             </div>
@@ -214,7 +245,7 @@
 
           <div class="field">
             <label for="post_notes">{{ t('Remarques après séance') }}</label>
-            <textarea id="post_notes" name="post_notes" rows="3" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); resize: vertical;">{{ t.post_notes or '' }}</textarea>
+            <textarea id="post_notes" name="post_notes" rows="3" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(76, 201, 240, 0.35); background-color: rgba(8, 12, 22, 0.85); color: var(--text); resize: vertical;">{{ tr.post_notes or '' }}</textarea>
           </div>
 
           <button class="btn btn--pink" type="submit">{{ t('Enregistrer') }}</button>

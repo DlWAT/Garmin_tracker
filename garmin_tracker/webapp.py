@@ -31,6 +31,9 @@ from .creds_store import GarminCredentials, InMemoryCredentialsStore
 from .storage import read_json, write_json
 from .db import db_session
 from .models import GarminAccount, User
+from .constants import SPORT_LABELS, sport_label as _sport_label, canonical_sport_type as _canonical_sport_type_fn
+from .garmin_workout_sender import send_training_to_garmin, schedule_workout_on_garmin, GarminWorkoutSendError
+from .i18n import translate as _translate
 
 
 _SESSION_KEY = "garmin_session_token"
@@ -46,51 +49,9 @@ _ADMIN_DB_IDS = {1}
 _ADMIN_USER_IDS = {"adri"}
 
 
-def _canonical_sport_type(type_key: str) -> str | None:
+def _canonical_sport_type(type_key: str | None) -> str | None:
     """Map Garmin typeKey variants to our 4 canonical sports."""
-
-    if not type_key:
-        return None
-
-    k = str(type_key)
-
-    running = {
-        "running",
-        "treadmill_running",
-        "trail_running",
-        "track_running",
-        "virtual_running",
-        "indoor_running",
-    }
-    cycling = {
-        "cycling",
-        "road_biking",
-        "mountain_biking",
-        "gravel_cycling",
-        "indoor_cycling",
-        "virtual_cycling",
-        "e_bike_fitness",
-        "e_bike_mountain",
-    }
-    swimming = {
-        "swimming",
-        "lap_swimming",
-        "pool_swimming",
-        "open_water_swimming",
-    }
-    strength = {
-        "strength_training",
-    }
-
-    if k in running:
-        return "running"
-    if k in cycling:
-        return "cycling"
-    if k in swimming:
-        return "swimming"
-    if k in strength:
-        return "strength_training"
-    return None
+    return _canonical_sport_type_fn(type_key)
 
 
 def _ensure_folders() -> None:
@@ -679,13 +640,40 @@ def create_app() -> Flask:
 
         return sec_by_zone, m_by_zone
 
+    def _is_coach(creds: GarminCredentials | None) -> bool:
+        if not creds:
+            return False
+        try:
+            with db_session() as db:
+                user = db.query(User).filter(User.user_id == str(creds.user_id)).one_or_none()
+                if user:
+                    return bool(user.is_coach)
+        except Exception:
+            pass
+        return False
+
     @app.context_processor
     def inject_user_context():
         creds = current_creds()
+        lang = session.get("lang") or "fr"
+        try:
+            lang = (request.args.get("lang") or "").strip().lower() or lang
+        except Exception:
+            pass
+        user_id = creds.user_id if creds else None
+        try:
+            view_uid = (request.args.get("user") or "").strip().lower() or user_id
+        except Exception:
+            view_uid = user_id
         return {
             "is_logged_in": bool(creds),
-            "user_id": (creds.user_id if creds else None),
+            "user_id": user_id,
             "is_admin": _is_admin(creds),
+            "is_coach": _is_coach(creds),
+            "viewing_user_id": view_uid,
+            "has_coaching_route": "coaching" in app.view_functions,
+            "t": lambda text, **kwargs: _translate(lang, text, **kwargs),
+            "lang": lang,
         }
 
     def require_login(view_func):
@@ -708,6 +696,7 @@ def create_app() -> Flask:
     _garmin_cache: dict[str, tuple[GarminClientHandler, float]] = {}
 
     def build_garmin_handler(creds: GarminCredentials) -> GarminClientHandler:
+        """Used by sync routes that store the Garmin password in creds temporarily."""
         now = time.time()
         with _garmin_lock:
             hit = _garmin_cache.get(creds.user_id)
@@ -717,6 +706,38 @@ def create_app() -> Flask:
                     return handler
 
         handler = GarminClientHandler(creds.email, creds.password, creds.user_id)
+        handler.login()
+        with _garmin_lock:
+            _garmin_cache[creds.user_id] = (handler, now + 20 * 60)
+        return handler
+
+    def get_garmin_client(creds: GarminCredentials, garmin_password: str | None = None) -> GarminClientHandler:
+        """Return a connected Garmin handler, reusing the session cache when available.
+
+        Priority:
+        1. Cached session (still valid) — no password needed, avoids rate-limit.
+        2. Explicit garmin_password provided — connects and stores in cache.
+        3. Raises GarminLoginError if no session and no password.
+        """
+        now = time.time()
+        with _garmin_lock:
+            hit = _garmin_cache.get(creds.user_id)
+            if hit:
+                handler, expires_at = hit
+                if now < expires_at and getattr(handler, "client", None) is not None:
+                    return handler
+
+        if not garmin_password:
+            raise GarminLoginError(
+                user_message=(
+                    "Aucune session Garmin active. "
+                    "Synchronise d'abord tes activités (Activités → Mettre à jour) "
+                    "ou saisis ton mot de passe Garmin."
+                ),
+                kind="no_session",
+            )
+
+        handler = GarminClientHandler(creds.email, garmin_password, creds.user_id)
         handler.login()
         with _garmin_lock:
             _garmin_cache[creds.user_id] = (handler, now + 20 * 60)
@@ -1198,14 +1219,6 @@ def create_app() -> Flask:
         # Upcoming planned trainings / competitions (next 3 each)
         today = dt.date.today()
 
-        sport_labels = {
-            "running": "Course à pied",
-            "cycling": "Vélo",
-            "swimming": "Natation",
-            "strength_training": "Musculation",
-            "other": "Autre",
-        }
-
         next_trainings: list[dict[str, Any]] = []
         try:
             planned_trainings = [t for t in _load_planned_trainings() if isinstance(t, dict) and _belongs_to_viewing_user(t)]
@@ -1219,7 +1232,7 @@ def create_app() -> Flask:
                         "title": t.get("title") or "Entraînement",
                         "description": t.get("description"),
                         "sport": t.get("sport") or "other",
-                        "sport_label": sport_labels.get(str(t.get("sport") or "other"), "Autre"),
+                        "sport_label": _sport_label(t.get("sport") or "other"),
                         "distance_km": t.get("distance_km"),
                     }
                 )
@@ -1238,7 +1251,7 @@ def create_app() -> Flask:
                         "date": c.get("date"),
                         "name": c.get("name") or "Compétition",
                         "sport": c.get("sport") or "other",
-                        "sport_label": sport_labels.get(str(c.get("sport") or "other"), "Autre"),
+                        "sport_label": _sport_label(c.get("sport") or "other"),
                         "distance": c.get("distance"),
                         "location": c.get("location"),
                     }
@@ -1279,14 +1292,85 @@ def create_app() -> Flask:
     def community():
         creds = require_creds()
         users = _db_list_users()
+        # Collect athlete user_ids for the current coach.
+        my_athletes: set[str] = set()
+        try:
+            with db_session() as db:
+                coach_user = db.query(User).filter(User.user_id == creds.user_id).one_or_none()
+                if coach_user and coach_user.is_coach:
+                    for ca in coach_user.coach_athletes:
+                        if ca.athlete:
+                            my_athletes.add(ca.athlete.user_id)
+        except Exception:
+            pass
         rows = [
             {
                 "user_id": u.user_id,
                 "display_name": u.display_name,
+                "is_coach": getattr(u, "is_coach", False),
             }
             for u in users
         ]
-        return render_template("community.html", users=rows, me=creds.user_id)
+        return render_template("community.html", users=rows, me=creds.user_id, my_athletes=my_athletes)
+
+    @app.post(f"{URL_PREFIX}/coach/add_athlete")
+    @require_login
+    def coach_add_athlete():
+        creds = require_creds()
+        if not _is_coach(creds):
+            flash("Accès coach requis.", "error")
+            return redirect(url_for("community"))
+        athlete_uid = (request.form.get("athlete_user_id") or "").strip().lower()
+        if not athlete_uid or not _is_safe_user_id(athlete_uid):
+            flash("Utilisateur invalide.", "error")
+            return redirect(url_for("community"))
+        if athlete_uid == creds.user_id:
+            flash("Impossible de t'ajouter toi-même.", "error")
+            return redirect(url_for("community"))
+        try:
+            with db_session() as db:
+                coach = db.query(User).filter(User.user_id == creds.user_id).one_or_none()
+                athlete = db.query(User).filter(User.user_id == athlete_uid).one_or_none()
+                if not coach or not athlete:
+                    flash("Impossible d'ajouter l'athlète.", "error")
+                    return redirect(url_for("community"))
+                from .models import CoachAthlete
+                existing = db.query(CoachAthlete).filter_by(coach_user_id=coach.id, athlete_user_id=athlete.id).one_or_none()
+                if not existing:
+                    db.add(CoachAthlete(coach_user_id=coach.id, athlete_user_id=athlete.id))
+        except Exception:
+            flash("Impossible d'ajouter l'athlète.", "error")
+            return redirect(url_for("community"))
+        flash(f"Athlète ajouté: {athlete_uid}", "success")
+        return redirect(url_for("community"))
+
+    @app.post(f"{URL_PREFIX}/coach/remove_athlete")
+    @require_login
+    def coach_remove_athlete():
+        creds = require_creds()
+        if not _is_coach(creds):
+            flash("Accès coach requis.", "error")
+            return redirect(url_for("community"))
+        athlete_uid = (request.form.get("athlete_user_id") or "").strip().lower()
+        if not athlete_uid or not _is_safe_user_id(athlete_uid):
+            flash("Utilisateur invalide.", "error")
+            return redirect(url_for("community"))
+        try:
+            with db_session() as db:
+                coach = db.query(User).filter(User.user_id == creds.user_id).one_or_none()
+                athlete = db.query(User).filter(User.user_id == athlete_uid).one_or_none()
+                if not coach or not athlete:
+                    flash("Impossible de retirer l'athlète.", "error")
+                    return redirect(url_for("community"))
+                from .models import CoachAthlete
+                ca = db.query(CoachAthlete).filter_by(coach_user_id=coach.id, athlete_user_id=athlete.id).one_or_none()
+                if ca:
+                    db.delete(ca)
+        except Exception:
+            flash("Impossible de retirer l'athlète.", "error")
+            return redirect(url_for("community"))
+        flash(f"Athlète retiré: {athlete_uid}", "success")
+        return redirect(url_for("community"))
 
     @app.get(f"{URL_PREFIX}/admin")
     @require_admin
@@ -1322,6 +1406,27 @@ def create_app() -> Flask:
             return redirect(url_for("admin"))
 
         flash(f"PIN réinitialisé pour {target}: {pin}", "success")
+        return redirect(url_for("admin"))
+
+    @app.post(f"{URL_PREFIX}/admin/set_coach")
+    @require_admin
+    def admin_set_coach():
+        target = (request.form.get("user_id") or "").strip().lower()
+        if not target or not _is_safe_user_id(target) or not _db_get_user_by_user_id(target):
+            flash("Utilisateur invalide.", "error")
+            return redirect(url_for("admin"))
+        is_coach_val = "is_coach" in request.form
+        try:
+            with db_session() as db:
+                u = db.query(User).filter(User.user_id == target).one_or_none()
+                if not u:
+                    flash("Utilisateur invalide.", "error")
+                    return redirect(url_for("admin"))
+                u.is_coach = is_coach_val
+            status = "ON" if is_coach_val else "OFF"
+            flash(f"Rôle coach mis à jour pour {target}: {status}", "success")
+        except Exception:
+            flash("Échec de la mise à jour du rôle coach.", "error")
         return redirect(url_for("admin"))
 
     @app.post(f"{URL_PREFIX}/admin/delete_data")
@@ -2290,6 +2395,8 @@ def create_app() -> Flask:
                 add_chart("speed", "Vitesse", "km/h", speed_kmh)
                 add_chart("power", "Puissance", "W", power)
 
+        activity_meta = (_get_profile(creds.user_id).get("activity_meta") or {}).get(str(activity_id)) or {}
+
         return render_template(
             "activity_detail.html",
             activity_id=activity_id,
@@ -2316,7 +2423,40 @@ def create_app() -> Flask:
             laps_rows=laps_rows,
             typed_splits_rows=typed_splits_rows,
             graph_urls=graph_urls,
+            activity_meta=activity_meta,
         )
+
+    @app.post(f"{URL_PREFIX}/activity/<int:activity_id>/feedback")
+    @require_login
+    def activity_feedback(activity_id: int):
+        """Save RPE / notes feedback for a completed activity."""
+        creds = require_creds()
+        profile = _get_profile(creds.user_id)
+        meta = profile.get("activity_meta") or {}
+        key = str(activity_id)
+
+        def _safe_float_rpe(v: Any) -> float | None:
+            try:
+                f = float(v)
+                if 0.0 <= f <= 10.0:
+                    return round(f * 2) / 2  # round to nearest 0.5
+            except Exception:
+                pass
+            return None
+
+        entry = dict(meta.get(key) or {})
+        for field in ("rpe", "rpe_cardio", "rpe_muscle", "rpe_technique"):
+            val = _safe_float_rpe(request.form.get(field))
+            if val is not None:
+                entry[field] = val
+        notes = (request.form.get("notes") or "").strip()
+        if notes:
+            entry["notes"] = notes
+        meta[key] = entry
+        profile["activity_meta"] = meta
+        repo.save_profile(creds.user_id, profile)
+        flash("Retour d'activité enregistré.", "success")
+        return redirect(url_for("activity_detail", activity_id=activity_id))
 
     @app.post(f"{URL_PREFIX}/update_activity")
     @require_login
@@ -2329,8 +2469,7 @@ def create_app() -> Flask:
 
         def run(progress):
             progress(2.0, "Connexion Garmin…")
-            handler = GarminClientHandler(creds.email, garmin_password, creds.user_id)
-            handler.login()
+            handler = get_garmin_client(creds, garmin_password)
             progress(5.0, "Synchronisation des activités…")
             handler.update_activity_data(progress=progress)
             repo.invalidate_prefix(f"activities:{creds.user_id}")
@@ -2357,11 +2496,14 @@ def create_app() -> Flask:
             else:
                 task_id = None
 
+        # Per-user subfolder avoids mixing charts between users.
+        health_dir = os.path.join("static", "health", creds.user_id)
+        os.makedirs(health_dir, exist_ok=True)
         if not task_running:
-            health_manager.plot_interactive_graphs("static/health")
+            health_manager.plot_interactive_graphs(health_dir)
         health_graphs = [
-            url_for("static", filename=f"health/{f}")
-            for f in os.listdir("static/health")
+            url_for("static", filename=f"health/{creds.user_id}/{f}")
+            for f in os.listdir(health_dir)
             if f.endswith(".html")
         ]
         return render_template(
@@ -2382,8 +2524,7 @@ def create_app() -> Flask:
 
         def run(progress):
             progress(2.0, "Connexion Garmin…")
-            handler = GarminClientHandler(creds.email, garmin_password, creds.user_id)
-            handler.login()
+            handler = get_garmin_client(creds, garmin_password)
             progress(5.0, "Synchronisation de la santé…")
             handler.update_health_data(progress=progress)
             repo.invalidate_prefix(f"health_stats:{creds.user_id}")
@@ -2672,17 +2813,10 @@ def create_app() -> Flask:
                 linked_activity_id = best.get("activityId")
                 linked_activity_name = best.get("activityName") or best.get("name")
 
-        sport_labels = {
-            "running": "Course à pied",
-            "cycling": "Vélo",
-            "swimming": "Natation",
-            "strength_training": "Musculation",
-            "other": "Autre",
-        }
         return render_template(
             "training_detail.html",
-            t=item,
-            sport_label=sport_labels.get(str(item.get("sport")), "Autre"),
+            tr=item,
+            sport_label=_sport_label(item.get("sport")),
             linked_activity_id=linked_activity_id,
             linked_activity_name=linked_activity_name,
         )
@@ -2725,6 +2859,69 @@ def create_app() -> Flask:
         flash("Retour de séance enregistré.", "success")
         return redirect(url_for("training_detail", training_id=training_id))
 
+    @app.post(f"{URL_PREFIX}/training/<training_id>/send_to_garmin")
+    @require_login
+    def send_training_to_garmin_route(training_id: str):
+        """Upload a planned training as a Garmin Connect workout and optionally schedule it."""
+        creds = require_creds()
+        garmin_password = (request.form.get("garmin_password") or "").strip() or None
+
+        trainings = _load_planned_trainings()
+        item = next(
+            (
+                t for t in trainings
+                if isinstance(t, dict)
+                and str(t.get("id")) == str(training_id)
+                and ((not str(t.get("user_id") or "").strip().lower()) or str(t.get("user_id") or "").strip().lower() == creds.user_id)
+            ),
+            None,
+        )
+        if not item:
+            flash("Entraînement introuvable.", "error")
+            return redirect(url_for("training"))
+
+        try:
+            handler = get_garmin_client(creds, garmin_password or None)
+            garmin_client = handler.client  # handler.client is the Garmin instance
+        except GarminLoginError as e:
+            flash(f"Connexion Garmin échouée: {e.user_message}", "error")
+            return redirect(url_for("training_detail", training_id=training_id))
+        except Exception as e:
+            flash(f"Erreur de connexion Garmin: {e}", "error")
+            return redirect(url_for("training_detail", training_id=training_id))
+
+        try:
+            workout_id = send_training_to_garmin(garmin_client, item)
+        except GarminWorkoutSendError as e:
+            flash(f"Erreur lors de l'envoi du workout: {e}", "error")
+            return redirect(url_for("training_detail", training_id=training_id))
+
+        schedule_date = (request.form.get("schedule_date") or str(item.get("date") or "")).strip()
+        scheduled = False
+        if schedule_date:
+            try:
+                schedule_workout_on_garmin(garmin_client, workout_id, schedule_date)
+                scheduled = True
+            except GarminWorkoutSendError as e:
+                flash(f"Workout créé (ID: {workout_id}) mais planification échouée: {e}", "error")
+                return redirect(url_for("training_detail", training_id=training_id))
+
+        updated_trainings = []
+        for t in trainings:
+            if isinstance(t, dict) and str(t.get("id")) == str(training_id):
+                t = dict(t)
+                t["garmin_workout_id"] = workout_id
+                if scheduled and schedule_date:
+                    t["garmin_scheduled_date"] = schedule_date
+            updated_trainings.append(t)
+        _save_planned_trainings(updated_trainings)
+
+        if scheduled:
+            flash(f"Workout envoyé et planifié sur Garmin Connect le {schedule_date}. (ID: {workout_id})", "success")
+        else:
+            flash(f"Workout envoyé sur Garmin Connect. (ID: {workout_id})", "success")
+        return redirect(url_for("training_detail", training_id=training_id))
+
     @app.get(f"{URL_PREFIX}/competition/<competition_id>")
     @require_login
     def competition_detail(competition_id: str):
@@ -2742,14 +2939,6 @@ def create_app() -> Flask:
         if not item:
             flash("Compétition introuvable.", "error")
             return redirect(url_for("training"))
-
-        sport_labels = {
-            "running": "Course à pied",
-            "cycling": "Vélo",
-            "swimming": "Natation",
-            "strength_training": "Musculation",
-            "other": "Autre",
-        }
 
         matched_activities: list[dict[str, Any]] = []
         try:
@@ -2780,7 +2969,7 @@ def create_app() -> Flask:
         return render_template(
             "competition_detail.html",
             c=item,
-            sport_label=sport_labels.get(str(item.get("sport")), "Autre"),
+            sport_label=_sport_label(item.get("sport")),
             matched_activities=matched_activities,
         )
 
@@ -2900,7 +3089,7 @@ def create_app() -> Flask:
         flash("Compétition ajoutée.", "success")
         return redirect(url_for("training"))
 
-    @app.get(f"{URL_PREFIX}/remove_competition/<path:competition_id>")
+    @app.post(f"{URL_PREFIX}/remove_competition/<path:competition_id>")
     @require_login
     def remove_competition(competition_id: str):
         creds = require_creds()
@@ -2929,6 +3118,9 @@ def create_app() -> Flask:
         description = (request.form.get("description") or "").strip()
         content = (request.form.get("content") or "").strip()
         notes = (request.form.get("notes") or "").strip()
+        send_to_garmin_flag = (request.form.get("send_to_garmin") or "").strip() == "1"
+        garmin_password = (request.form.get("garmin_password") or "").strip()
+        no_schedule = (request.form.get("no_schedule") or "").strip() == "1"
 
         if not title or not date:
             flash("Titre et date sont obligatoires.", "error")
@@ -2951,14 +3143,46 @@ def create_app() -> Flask:
             except ValueError:
                 pass
 
+        # Optionally send to Garmin Connect right away.
+        garmin_status: str | None = None
+        garmin_ok = False
+        if send_to_garmin_flag:
+            try:
+                handler = get_garmin_client(creds, garmin_password or None)
+                workout_id = send_training_to_garmin(handler.client, training)
+                training["garmin_workout_id"] = workout_id
+                garmin_ok = True
+                garmin_status = f"Workout envoyé sur Garmin Connect (ID: {workout_id})"
+                # Schedule on the training date unless opted out
+                if date and not no_schedule:
+                    try:
+                        schedule_workout_on_garmin(handler.client, workout_id, date)
+                        garmin_status = f"Workout envoyé et planifié le {date} (ID: {workout_id})"
+                        training["garmin_scheduled_date"] = date
+                    except GarminWorkoutSendError as e:
+                        garmin_status = f"Workout créé (ID: {workout_id}) mais planification échouée: {e}"
+                        garmin_ok = False
+            except GarminLoginError as e:
+                garmin_status = f"Connexion Garmin échouée: {e.user_message}"
+            except GarminWorkoutSendError as e:
+                garmin_status = f"Erreur Garmin: {e}"
+            except Exception as e:
+                garmin_status = f"Erreur inattendue: {e}"
+
         trainings = _load_planned_trainings()
         trainings.append(training)
         _save_planned_trainings(trainings)
 
+        # Return JSON if the client sent the Garmin flag (fetch-based form submission).
+        if send_to_garmin_flag:
+            msg = garmin_status or ("Entraînement ajouté." if not send_to_garmin_flag else "Entraînement ajouté.")
+            flash(msg, "success" if garmin_ok else "error")
+            return jsonify({"ok": True, "garmin_ok": garmin_ok, "garmin_status": garmin_status or ""})
+
         flash("Entraînement ajouté.", "success")
         return redirect(url_for("training"))
 
-    @app.get(f"{URL_PREFIX}/remove_training/<path:training_id>")
+    @app.post(f"{URL_PREFIX}/remove_training/<path:training_id>")
     @require_login
     def remove_training(training_id: str):
         creds = require_creds()

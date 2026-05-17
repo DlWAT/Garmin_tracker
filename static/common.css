@@ -328,4 +328,233 @@ input:focus {
     }
 }
 
-```
+/* ─── Utility layout helpers ─────────────────────────────────────── */
+
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.flex-end {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.flex-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.spacer {
+    height: 20px;
+}
+
+/* Cards / list items */
+
+.event-card {
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border-left: 3px solid rgba(76, 201, 240, 0.4);
+    background: rgba(8, 12, 22, 0.5);
+}
+
+.event-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.event-card--low {
+    background: rgba(34, 197, 94, 0.08);
+    border-left-color: rgba(34, 197, 94, 0.6);
+}
+
+.event-card--mid {
+    background: rgba(234, 179, 8, 0.08);
+    border-left-color: rgba(234, 179, 8, 0.6);
+}
+
+.event-card--high {
+    background: rgba(239, 68, 68, 0.08);
+    border-left-color: rgba(239, 68, 68, 0.6);
+}
+
+.event-card__title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    display: block;
+    text-decoration: none;
+}
+
+.event-card__title:hover {
+    text-decoration: underline;
+}
+
+.event-card__meta {
+    margin-top: 6px;
+    font-size: 0.9rem;
+}
+
+.event-card__desc {
+    margin-top: 6px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+.empty-state {
+    padding: 16px;
+    background: rgba(8, 12, 22, 0.5);
+    border-radius: 10px;
+    text-align: center;
+    color: var(--muted-text);
+}
+
+/* Section headers */
+.section-header {
+    margin: 0 0 16px 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.section-title {
+    margin: 0 0 12px 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+/* Btn size variants */
+.btn--icon {
+    min-width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+}
+
+.btn--sm {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+/* Form row (inline filters) */
+.filter-form {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-form .field {
+    margin: 0;
+    min-width: 160px;
+    flex: 1;
+}
+
+/* Table styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-text);
+    border-bottom: 1px solid var(--border);
+}
+
+td {
+    padding: 10px 10px;
+    border-bottom: 1px solid rgba(234, 241, 255, 0.05);
+    font-size: 0.95rem;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Stat grid (dashboard summary numbers) */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.stat-item {
+    background: rgba(8, 12, 22, 0.5);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+}
+
+.stat-item__label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-text);
+    margin-bottom: 6px;
+}
+
+.stat-item__value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1.1;
+}
+
+.stat-item__sub {
+    font-size: 0.85rem;
+    color: var(--muted-text);
+    margin-top: 4px;
+}
+
+/* Two-column layout (events grid on dashboard) */
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+/* Inline flash for modal-like messages */
+.info-box {
+    background: rgba(76, 201, 240, 0.08);
+    border: 1px solid rgba(76, 201, 240, 0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+}
+
+.info-box--warning {
+    background: rgba(234, 179, 8, 0.08);
+    border-color: rgba(234, 179, 8, 0.35);
+}
+
+.info-box--danger {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.info-box--success {
+    background: rgba(34, 197, 94, 0.08);
+    border-color: rgba(34, 197, 94, 0.35);
+}

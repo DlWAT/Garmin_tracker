@@ -8,614 +8,1136 @@
 
 {% block content %}
   <div class="training-header">
-      <h1 style="margin: 0;">{{ t('Entraînement') }}</h1>
+    <h1 style="margin: 0;">{{ t('Entraînement') }}</h1>
   </div>
 
-    <main class="container container--stack">
-            <div class="training-tabs" role="tablist" aria-label="Navigation entraînement">
-                    <button id="tab-calendar" class="training-tab is-active" type="button" role="tab" aria-selected="true">{{ t('Calendrier') }}</button>
-                    <button id="tab-planner" class="training-tab" type="button" role="tab" aria-selected="false">{{ t('Planificateur de séance') }}</button>
+  <main class="container container--stack">
+    <div class="training-tabs" role="tablist" aria-label="Navigation entraînement">
+      <button id="tab-calendar" class="training-tab is-active" type="button" role="tab" aria-selected="true">{{ t('Calendrier') }}</button>
+      <button id="tab-planner"  class="training-tab"           type="button" role="tab" aria-selected="false">{{ t('Planificateur de séance') }}</button>
+    </div>
+
+    {# ── Calendrier ─────────────────────────────────────────────── #}
+    <section class="calendar-container" id="panel-calendar" role="tabpanel" aria-label="Calendrier">
+      <div class="calendar-navigation">
+        <button id="prev-month">◀</button>
+        <span id="month-year"></span>
+        <button id="next-month">▶</button>
+      </div>
+      <table class="calendar-table">
+        <thead>
+          <tr>
+            <th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th>
+          </tr>
+        </thead>
+        <tbody id="calendar-body"></tbody>
+      </table>
+    </section>
+
+    {# ── Planificateur ───────────────────────────────────────────── #}
+    <section class="planner" id="panel-planner" role="tabpanel" aria-label="Planificateur" hidden>
+      <div class="planner-grid">
+
+        {# ── Formulaire séance ─────────────────────────────────── #}
+        <div class="planner-card" style="grid-column: 1 / -1;">
+          <h2>{{ t('Planifier une séance') }}</h2>
+
+          {# Infos générales #}
+          <div class="planner-form__grid" style="margin-bottom: 16px;">
+            <div class="field" style="margin:0;">
+              <label for="training-title">{{ t('Titre') }}</label>
+              <input type="text" id="training-title" placeholder="Ex: Fractionné 10×400m" required>
+            </div>
+            <div class="field" style="margin:0;">
+              <label for="training-date">{{ t('Date') }}</label>
+              <input type="date" id="training-date" required>
+            </div>
+            <div class="field" style="margin:0;">
+              <label for="training-sport">{{ t('Sport') }}</label>
+              <select id="training-sport">
+                <option value="running" selected>Course à pied</option>
+                <option value="cycling">Vélo</option>
+                <option value="swimming">Natation</option>
+                <option value="strength_training">Musculation</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0;">
+              <label for="training-distance">{{ t('Distance (km)') }} <span class="muted" style="font-weight:400;">(optionnel)</span></label>
+              <input type="number" id="training-distance" placeholder="Optionnel" step="0.1" min="0">
+            </div>
+            <div class="field" style="margin:0;">
+              <label for="training-description">{{ t('Description courte') }} <span class="muted" style="font-weight:400;">(optionnel)</span></label>
+              <input type="text" id="training-description" placeholder="Ex: Séance de vitesse">
+            </div>
+            <div class="field" style="margin:0;">
+              <label for="training-notes">{{ t('Remarques') }} <span class="muted" style="font-weight:400;">(optionnel)</span></label>
+              <input type="text" id="training-notes" placeholder="Ex: Monter la cadence">
+            </div>
+          </div>
+
+          {# ── Constructeur de steps (style Garmin) ──────────────── #}
+          <div style="margin-bottom: 16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+              <div style="font-weight:800; font-size:1rem;">Contenu de la séance</div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;" id="step-add-buttons">
+                <button class="btn btn--sm" type="button" id="step-add-warmup"   title="Ajouter échauffement">+ Échauffement</button>
+                <button class="btn btn--sm" type="button" id="step-add-interval" title="Ajouter intervalle">+ Intervalle</button>
+                <button class="btn btn--sm" type="button" id="step-add-repeat"   title="Ajouter bloc de répétitions" style="background:var(--accent2)">+ Bloc répété</button>
+                <button class="btn btn--sm" type="button" id="step-add-recovery" title="Ajouter récupération">+ Récupération</button>
+                <button class="btn btn--sm" type="button" id="step-add-cooldown" title="Ajouter retour au calme">+ Retour au calme</button>
+                {# Boutons natation — masqués par défaut #}
+                <button class="btn btn--sm swim-only" type="button" id="step-add-edu" title="Ajouter éducatif natation" style="display:none; background:rgba(56,189,248,0.25); border-color:rgba(56,189,248,0.5);">+ Éducatif</button>
+              </div>
             </div>
 
-            <section class="calendar-container" id="panel-calendar" role="tabpanel" aria-label="Calendrier">
-          <div class="calendar-navigation">
-              <button id="prev-month">◀</button>
-              <span id="month-year"></span>
-              <button id="next-month">▶</button>
+            {# Champ matériel natation (masqué si autre sport) #}
+            <div id="swim-equipment-row" style="display:none; margin-bottom:10px; gap:8px; flex-wrap:wrap; align-items:center;">
+              <span class="muted" style="font-size:0.85rem; min-width:60px;">Matériel :</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;" id="swim-equipment-buttons">
+                <button class="btn btn--sm equipment-tag" type="button" data-equip="planche"    style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">🟦 Planche</button>
+                <button class="btn btn--sm equipment-tag" type="button" data-equip="pull-buoy"  style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">🔵 Pull-buoy</button>
+                <button class="btn btn--sm equipment-tag" type="button" data-equip="palmes"     style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">🟢 Palmes</button>
+                <button class="btn btn--sm equipment-tag" type="button" data-equip="plaquettes" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">🟣 Plaquettes</button>
+                <button class="btn btn--sm equipment-tag" type="button" data-equip="élastique"  style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">🟠 Élastique</button>
+                <button class="btn btn--sm equipment-tag" type="button" data-equip="tuba"       style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">⚪ Tuba</button>
+              </div>
+              <span id="swim-equipment-display" class="muted" style="font-size:0.82rem; font-style:italic;"></span>
+            </div>
+
+            <div id="step-builder" style="display:flex; flex-direction:column; gap:8px; min-height:60px; padding:10px; border-radius:10px; border:1px dashed var(--border); background:rgba(8,12,22,0.4);">
+              <div id="step-empty" class="muted" style="text-align:center; padding:16px; font-size:0.9rem;">Aucun step — utilise les boutons ci-dessus ou choisis un modèle.</div>
+            </div>
+
+            {# Presets course #}
+            <div id="presets-running" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; align-items:center;">
+              <span class="muted" style="font-size:0.85rem;">Modèle :</span>
+              <button class="btn btn--sm" type="button" onclick="applyStepPreset('recup')">Récup</button>
+              <button class="btn btn--sm" type="button" onclick="applyStepPreset('ef')">EF</button>
+              <button class="btn btn--sm" type="button" onclick="applyStepPreset('tempo')">Tempo</button>
+              <button class="btn btn--sm" type="button" onclick="applyStepPreset('frac_short')">Fractionné court</button>
+              <button class="btn btn--sm" type="button" onclick="applyStepPreset('frac_long')">Fractionné long</button>
+              <button class="btn btn--sm" type="button" onclick="applyStepPreset('frac_vo2')">VO2max</button>
+              <button class="btn btn--sm" style="background:rgba(255,255,255,0.07); color:var(--muted-text);" type="button" onclick="clearSteps()">Effacer tout</button>
+            </div>
+
+            {# Presets natation — masqués par défaut #}
+            <div id="presets-swimming" style="display:none; flex-wrap:wrap; margin-top:10px; gap:6px; align-items:flex-start;">
+              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; width:100%;">
+                <span class="muted" style="font-size:0.85rem;">Modèle :</span>
+                <button class="btn btn--sm" type="button" onclick="applyStepPreset('swim_recup')"     style="background:rgba(56,189,248,0.18);">Récup active</button>
+                <button class="btn btn--sm" type="button" onclick="applyStepPreset('swim_fond')"      style="background:rgba(56,189,248,0.18);">Endurance fond.</button>
+                <button class="btn btn--sm" type="button" onclick="applyStepPreset('swim_technique')" style="background:rgba(56,189,248,0.18);">Technique / Éducatifs</button>
+                <button class="btn btn--sm" type="button" onclick="applyStepPreset('swim_seuil')"     style="background:rgba(56,189,248,0.18);">Seuil anaérobie</button>
+                <button class="btn btn--sm" type="button" onclick="applyStepPreset('swim_sprint')"    style="background:rgba(56,189,248,0.18);">Sprints</button>
+                <button class="btn btn--sm" type="button" onclick="applyStepPreset('swim_vo2')"       style="background:rgba(56,189,248,0.18);">VO2max</button>
+                <button class="btn btn--sm" type="button" onclick="applyStepPreset('swim_4n')"        style="background:rgba(56,189,248,0.18);">4 nages</button>
+                <button class="btn btn--sm" style="background:rgba(255,255,255,0.07); color:var(--muted-text);" type="button" onclick="clearSteps()">Effacer tout</button>
+              </div>
+              {# Légende éducatifs #}
+              <details style="width:100%; margin-top:6px;">
+                <summary style="cursor:pointer; font-size:0.8rem; color:var(--muted-text); user-select:none;">Éducatifs reconnus (aide-mémoire)</summary>
+                <div style="font-size:0.78rem; color:var(--muted-text); padding:6px 0; display:flex; flex-wrap:wrap; gap:6px 16px; line-height:1.8;">
+                  <span><b>Technique bras :</b> catch-up · one-arm · fingertip drag · fist · sculling</span>
+                  <span><b>Technique jambes :</b> kick board · kick dos · kick papillon</span>
+                  <span><b>Coordination :</b> 3-3-3 · side kick · breath control · 2-4-6</span>
+                  <span><b>Nages :</b> crawl · dos · brasse · papillon · 4 nages</span>
+                  <span><b>Matériel :</b> planche · pull-buoy · palmes · plaquettes · élastique · tuba</span>
+                </div>
+              </details>
+            </div>
           </div>
-          <table class="calendar-table">
-              <thead>
-                  <tr>
-                      <th>Lun</th>
-                      <th>Mar</th>
-                      <th>Mer</th>
-                      <th>Jeu</th>
-                      <th>Ven</th>
-                      <th>Sam</th>
-                      <th>Dim</th>
-                  </tr>
-              </thead>
-              <tbody id="calendar-body"></tbody>
-          </table>
-      </section>
 
-      <section class="planner" id="panel-planner" role="tabpanel" aria-label="Planificateur" hidden>
-          <div class="planner-grid">
-              <div class="planner-card">
-                  <h2>{{ t('Entraînement') }}</h2>
-                  <form id="training-form" class="planner-form" onsubmit="return false;">
-                      <div class="planner-form__grid">
-                          <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-preset">{{ t('Séance type') }}</label>
-                              <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                  <select id="training-preset" style="flex: 1; min-width: 220px;">
-                                      <option value="">{{ t('— Choisir un modèle —') }}</option>
-                                      <option value="recup">Récup</option>
-                                      <option value="ef">EF</option>
-                                      <option value="tempo">Tempo</option>
-                                      <option value="frac_short">Fractionné court</option>
-                                      <option value="frac_long">Fractionné long</option>
-                                  </select>
-                                  <button class="btn" type="button" id="apply-preset">{{ t('Appliquer') }}</button>
-                              </div>
-                              <div class="muted">{{ t('Pré-remplit les champs (modifiable ensuite).') }}</div>
-                          </div>
-                          <div class="field" style="margin:0;">
-                              <label for="training-title">{{ t('Titre') }}</label>
-                              <input type="text" id="training-title" placeholder="Ex: Fractionné 10x400" required>
-                          </div>
-                          <div class="field" style="margin:0;">
-                              <label for="training-date">{{ t('Date') }}</label>
-                              <input type="date" id="training-date" required>
-                          </div>
-                          <div class="field" style="margin:0;">
-                              <label for="training-sport">{{ t('Sport') }}</label>
-                              <select id="training-sport" required>
-                                  <option value="running" selected>Course à pied</option>
-                                  <option value="cycling">Vélo</option>
-                                  <option value="swimming">Natation</option>
-                                  <option value="strength_training">Musculation</option>
-                                  <option value="other">Autre</option>
-                              </select>
-                          </div>
-                          <div class="field" style="margin:0;">
-                              <label for="training-distance">{{ t('Distance (km)') }}</label>
-                              <input type="number" id="training-distance" placeholder="Optionnel" step="0.1">
-                          </div>
-                          <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-description">{{ t('Description courte') }}</label>
-                              <input type="text" id="training-description" placeholder="Optionnel">
-                          </div>
-                          <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-content">{{ t('Contenu') }}</label>
-                              <textarea id="training-content" class="planner-textarea planner-textarea--content" rows="6" placeholder="Optionnel
+          {# ── Aperçu durée estimée ──────────────────────────────── #}
+          <div id="step-summary" class="muted" style="font-size:0.85rem; margin-bottom:14px;"></div>
 
-Exemple course :
-- 20' EF
-- 10x400m (r=1')
-- 10' retour au calme"></textarea>
-                          </div>
-                          <div class="field" style="margin:0; grid-column: 1 / -1;">
-                              <label for="training-notes">{{ t('Remarques') }}</label>
-                              <textarea id="training-notes" class="planner-textarea" rows="3" placeholder="Optionnel"></textarea>
-                          </div>
-                      </div>
-                      <div class="planner-actions">
-                          <button class="btn" type="button" id="add-training">{{ t('Ajouter') }}</button>
-                      </div>
-                  </form>
+          {# ── Envoi Garmin Connect ──────────────────────────────── #}
+          <details id="garmin-section" style="margin-bottom:16px;">
+            <summary style="cursor:pointer; font-weight:800; padding:10px 12px; border-radius:10px; background:rgba(76,201,240,0.07); border:1px solid rgba(76,201,240,0.2); list-style:none; display:flex; align-items:center; gap:10px; user-select:none;">
+              <span style="font-size:1.1rem;">⌚</span>
+              <span>Envoyer sur Garmin Connect</span>
+              <span class="muted" style="font-weight:400; font-size:0.85rem; margin-left:auto;">Optionnel — synchronise le workout avec ta montre</span>
+            </summary>
+            <div style="padding:14px 4px 0;">
+              <p class="muted" style="margin:0 0 10px; font-size:0.88rem;">
+                Le workout structuré sera créé dans ton compte Garmin Connect et apparaîtra sur ta montre.
+                Seule la course à pied génère des steps détaillés ; les autres sports créent un workout générique.
+              </p>
+              <div class="info-box" style="margin-bottom:12px; font-size:0.85rem;">
+                Si tu as synchronisé tes activités récemment (moins de 20 min), la session Garmin est encore active
+                et le mot de passe n'est <strong>pas nécessaire</strong>. Laisse le champ vide dans ce cas.
               </div>
-
-              <div class="planner-card">
-                  <h2>{{ t('Compétition') }}</h2>
-                  <form id="competition-form" class="planner-form" onsubmit="return false;">
-                      <div class="planner-form__grid">
-                          <div class="field" style="margin:0;">
-                              <label for="competition-name">{{ t('Nom') }}</label>
-                              <input type="text" id="competition-name" placeholder="Ex: Semi-marathon" required>
-                          </div>
-                          <div class="field" style="margin:0;">
-                              <label for="competition-date">{{ t('Date') }}</label>
-                              <input type="date" id="competition-date" required>
-                          </div>
-                          <div class="field" style="margin:0;">
-                              <label for="competition-sport">{{ t('Sport') }}</label>
-                              <select id="competition-sport" required>
-                                  <option value="running" selected>Course à pied</option>
-                                  <option value="cycling">Vélo</option>
-                                  <option value="swimming">Natation</option>
-                                  <option value="strength_training">Musculation</option>
-                                  <option value="other">Autre</option>
-                              </select>
-                          </div>
-                          <div class="field" style="margin:0;">
-                              <label for="competition-distance">{{ t('Distance (km)') }}</label>
-                              <input type="number" id="competition-distance" placeholder="Optionnel" step="0.1">
-                          </div>
-                      </div>
-                      <div class="planner-actions">
-                          <button class="btn btn--pink" type="button" id="add-competition">{{ t('Ajouter') }}</button>
-                      </div>
-                  </form>
+              <div class="field" style="margin:0 0 10px;">
+                <label for="training-garmin-password">Mot de passe Garmin Connect <span class="muted" style="font-weight:400;">(optionnel si session active)</span></label>
+                <input type="password" id="training-garmin-password" autocomplete="current-password" placeholder="Laisser vide si session récente">
               </div>
+              <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.9rem;">
+                <input type="checkbox" id="training-schedule-garmin" checked style="width:auto;" />
+                <span>Planifier automatiquement sur la date de la séance</span>
+              </label>
+            </div>
+          </details>
 
-              <div class="planner-card">
-                  <h2>{{ t('Prochains entraînements') }}</h2>
-                  <ul id="training-list"></ul>
-                  <div class="muted" id="training-list-meta" style="margin-top: 6px;"></div>
-              </div>
-
-              <div class="planner-card">
-                  <h2>{{ t('Prochaines compétitions') }}</h2>
-                  <ul id="competition-list"></ul>
-                  <div class="muted" id="competition-list-meta" style="margin-top: 6px;"></div>
-              </div>
+          <div class="planner-actions" style="gap:12px;">
+            <span id="garmin-send-status" style="display:none; font-size:0.88rem; align-self:center;" class="muted"></span>
+            <button class="btn btn--pink" type="button" id="add-training">{{ t('Ajouter la séance') }}</button>
           </div>
-      </section>
-      <div id="tooltip" class="tooltip"></div>
+        </div>
+
+        {# ── Compétition ───────────────────────────────────────── #}
+        <div class="planner-card">
+          <h2>{{ t('Compétition') }}</h2>
+          <form id="competition-form" class="planner-form" onsubmit="return false;">
+            <div class="planner-form__grid">
+              <div class="field" style="margin:0;">
+                <label for="competition-name">{{ t('Nom') }}</label>
+                <input type="text" id="competition-name" placeholder="Ex: Semi-marathon" required>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="competition-date">{{ t('Date') }}</label>
+                <input type="date" id="competition-date" required>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="competition-sport">{{ t('Sport') }}</label>
+                <select id="competition-sport">
+                  <option value="running" selected>Course à pied</option>
+                  <option value="cycling">Vélo</option>
+                  <option value="swimming">Natation</option>
+                  <option value="strength_training">Musculation</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="competition-distance">{{ t('Distance (km)') }}</label>
+                <input type="number" id="competition-distance" placeholder="Optionnel" step="0.1" min="0">
+              </div>
+            </div>
+            <div class="planner-actions">
+              <button class="btn btn--pink" type="button" id="add-competition">{{ t('Ajouter') }}</button>
+            </div>
+          </form>
+        </div>
+
+        {# ── Listes à venir ─────────────────────────────────────── #}
+        <div class="planner-card">
+          <h2>{{ t('Prochains entraînements') }}</h2>
+          <ul id="training-list"></ul>
+          <div class="muted" id="training-list-meta" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="planner-card">
+          <h2>{{ t('Prochaines compétitions') }}</h2>
+          <ul id="competition-list"></ul>
+          <div class="muted" id="competition-list-meta" style="margin-top:6px;"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <div id="tooltip" class="tooltip"></div>
   </main>
 
   <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            let trainings = {{ trainings|tojson }};
-            let competitions = {{ competitions|tojson }};
+  document.addEventListener("DOMContentLoaded", () => {
+    /* ─── données Jinja ─────────────────────────────────────────── */
+    let trainings   = {{ trainings|tojson }};
+    let competitions = {{ competitions|tojson }};
+    const viewingUserId = {{ (viewing_user_id or '')|tojson }};
+    const lang = {{ (lang or 'fr')|tojson }};
 
-            const viewingUserId = {{ (viewing_user_id or '')|tojson }};
-            const lang = {{ (lang or 'fr')|tojson }};
+    /* ─── URLs ──────────────────────────────────────────────────── */
+    const calendarEventsUrl       = "{{ url_for('api_calendar_events') }}";
+    const activityAsTrainingUrl   = "{{ url_for('api_activity_as_training') }}";
+    const addTrainingUrl          = "{{ url_for('add_training') }}";
+    const addCompetitionUrl       = "{{ url_for('add_competition') }}";
+    const trainingDetailBaseUrl   = "{{ url_for('training_detail', training_id='__ID__') }}";
+    const competitionDetailBaseUrl = "{{ url_for('competition_detail', competition_id='__ID__') }}";
+    const activityDetailBaseUrl   = "{{ url_for('activity_detail', activity_id=0) }}";
+    const removeTrainingBaseUrl   = "{{ url_for('remove_training', training_id='__ID__') }}";
+    const removeCompetitionBaseUrl = "{{ url_for('remove_competition', competition_id='__ID__') }}";
 
-            let monthTrainings = [];
-            let monthCompetitions = [];
-            let monthActivities = [];
-            let eventsByDate = new Map();
+    /* ─── helpers ───────────────────────────────────────────────── */
+    const withUser = (url) => {
+      if (!viewingUserId) return url;
+      return url + (url.includes('?') ? '&' : '?') + 'user=' + encodeURIComponent(viewingUserId);
+    };
+    const activityUrl = (id) => {
+      const n = Number(id);
+      if (!Number.isFinite(n)) return null;
+      return withUser(activityDetailBaseUrl.replace(/\/0$/, '/' + encodeURIComponent(String(n))));
+    };
+    const sportLabel = (s) => ({
+      running:'Course à pied', cycling:'Vélo', swimming:'Natation',
+      strength_training:'Musculation', other:'Autre'
+    }[s] || 'Autre');
+    const fmtDist = (type, data) => {
+      const d = type === 'training' ? data.distance_km : data.distance;
+      if (d == null || d === '') return 'N/A';
+      const n = Number(d);
+      if (!isFinite(n)) return 'N/A';
+      return ((type === 'activity' && n > 100) ? n/1000 : n).toFixed(2) + ' km';
+    };
 
-            const calendarEventsUrl = "{{ url_for('api_calendar_events') }}";
-            const activityAsTrainingUrl = "{{ url_for('api_activity_as_training') }}";
-            const calendarBody = document.getElementById("calendar-body");
-            const monthYearDisplay = document.getElementById("month-year");
-            const tooltip = document.getElementById("tooltip");
+    /* ═══════════════════════════════════════════════════════════════
+       STEP BUILDER
+    ══════════════════════════════════════════════════════════════════ */
 
-            const tabCalendar = document.getElementById('tab-calendar');
-            const tabPlanner = document.getElementById('tab-planner');
-            const panelCalendar = document.getElementById('panel-calendar');
-            const panelPlanner = document.getElementById('panel-planner');
+    /* step data model:
+       { type: 'warmup'|'interval'|'recovery'|'cooldown'|'repeat'|'edu',
+         durationType: 'time'|'distance',
+         durationValue: number,  // seconds or metres
+         targetType: 'none'|'pace'|'pace100'|'hr',
+         targetLow: number|null, targetHigh: number|null,
+         // natation uniquement:
+         stroke: string|null,      // crawl|dos|brasse|papillon|4nages|null
+         equipment: string|null,   // pull-buoy|planche|palmes|plaquettes|élastique|tuba|null
+         eduName: string|null,     // nom de l'éducatif
+         // repeat only:
+         iterations: number,
+         children: [step, ...]   }                                   */
 
-            const trainingDetailBaseUrl = "{{ url_for('training_detail', training_id='__ID__') }}";
-            const competitionDetailBaseUrl = "{{ url_for('competition_detail', competition_id='__ID__') }}";
-            const activityDetailBaseUrl = "{{ url_for('activity_detail', activity_id=0) }}";
+    let steps = [];
+    let swimEquipment = new Set(); // équipement global sélectionné pour la séance
 
-            const withUserParam = (url) => {
-                if (!viewingUserId) return url;
-                const sep = url.includes('?') ? '&' : '?';
-                return `${url}${sep}user=${encodeURIComponent(viewingUserId)}`;
-            };
+    const STEP_META = {
+      warmup:   { label:'Échauffement',    color:'rgba(76,201,240,0.18)',  border:'rgba(76,201,240,0.45)' },
+      interval: { label:'Intervalle',      color:'rgba(255,77,141,0.15)',  border:'rgba(255,77,141,0.5)'  },
+      recovery: { label:'Récupération',    color:'rgba(76,201,240,0.08)',  border:'rgba(76,201,240,0.25)' },
+      cooldown: { label:'Retour au calme', color:'rgba(76,201,240,0.12)',  border:'rgba(76,201,240,0.35)' },
+      repeat:   { label:'Bloc répété',     color:'rgba(255,77,141,0.08)',  border:'rgba(255,77,141,0.35)' },
+      edu:      { label:'Éducatif',        color:'rgba(56,189,248,0.12)',  border:'rgba(56,189,248,0.45)' },
+    };
 
-            const setActiveTab = (tab) => {
-                const isCalendar = tab === 'calendar';
-                tabCalendar.classList.toggle('is-active', isCalendar);
-                tabPlanner.classList.toggle('is-active', !isCalendar);
-                tabCalendar.setAttribute('aria-selected', isCalendar ? 'true' : 'false');
-                tabPlanner.setAttribute('aria-selected', !isCalendar ? 'true' : 'false');
-                panelCalendar.hidden = !isCalendar;
-                panelPlanner.hidden = isCalendar;
-            };
+    const SWIM_STROKES = [
+      ['','— nage libre —'],['crawl','Crawl'],['dos','Dos'],['brasse','Brasse'],
+      ['papillon','Papillon'],['4nages','4 nages'],
+    ];
+    const SWIM_EDU_PRESETS = [
+      '','catch-up','one-arm','fingertip drag','fist','sculling','3-3-3',
+      'side kick','kick board','kick dos','kick papillon','breath control',
+      '2-4-6','bilateral','rotation','pull','entrée-sortie',
+    ];
 
-            tabCalendar.addEventListener('click', () => setActiveTab('calendar'));
-            tabPlanner.addEventListener('click', () => setActiveTab('planner'));
+    /* ── factories ──────────────────────────────────────────────── */
+    const makeStep = (type, opts={}) => ({
+      type,
+      durationType: opts.durationType || 'time',
+      durationValue: opts.durationValue || (type==='interval'?300:600),
+      targetType: opts.targetType || 'none',
+      targetLow: opts.targetLow || null,
+      targetHigh: opts.targetHigh || null,
+      stroke: opts.stroke || null,
+      equipment: opts.equipment || null,
+      eduName: opts.eduName || null,
+    });
+    const makeEdu = (eduName='', opts={}) => makeStep('edu', {
+      durationType: opts.durationType || 'distance',
+      durationValue: opts.durationValue || 100,
+      eduName,
+      stroke: opts.stroke || null,
+      equipment: opts.equipment || null,
+    });
+    const makeRepeat = (iterations=3, children=[]) => ({
+      type:'repeat', iterations, children,
+    });
 
-            const activityUrl = (activityId) => {
-                const id = Number(activityId);
-                if (!Number.isFinite(id)) return null;
-                return withUserParam(activityDetailBaseUrl.replace(/\/0$/, `/${encodeURIComponent(String(id))}`));
-            };
+    /* ── sport helper ───────────────────────────────────────────── */
+    const currentSport = () => document.getElementById('training-sport').value;
 
-            let currentDate = new Date();
+    /* ── duration helpers ───────────────────────────────────────── */
+    const fmtDuration = (s) => {
+      if (s == null) return '—';
+      const t = Number(s);
+      if (!isFinite(t)) return '—';
+      const m = Math.floor(t/60), sec = Math.round(t%60);
+      return sec ? `${m}min${sec}` : `${m}min`;
+    };
+    const fmtDurationDisplay = (step) => {
+      if (step.durationType === 'distance') return (step.durationValue>=1000 ? (step.durationValue/1000)+'km' : step.durationValue+'m');
+      return fmtDuration(step.durationValue);
+    };
+    const totalStepSecs = (step) => {
+      if (step.type === 'repeat') return step.iterations * step.children.reduce((a,c)=>a+totalStepSecs(c),0);
+      if (step.durationType === 'distance') return null; // can't estimate from distance alone
+      return Number(step.durationValue) || 0;
+    };
+    const totalSecs = () => {
+      let s=0; for (const st of steps) { const v=totalStepSecs(st); if(v===null) return null; s+=v; }
+      return s;
+    };
 
-            const indexMonthEvents = () => {
-                eventsByDate = new Map();
-                const add = (ev) => {
-                    if (!ev || !ev.date) return;
-                    const key = String(ev.date);
-                    if (!eventsByDate.has(key)) eventsByDate.set(key, []);
-                    eventsByDate.get(key).push(ev);
-                };
-                monthActivities.forEach((a) => add({ type: 'activity', ...a }));
-                monthTrainings.forEach((t) => add({ type: 'training', ...t }));
-                monthCompetitions.forEach((c) => add({ type: 'competition', ...c }));
-            };
+    /* ── target helpers ─────────────────────────────────────────── */
+    const fmtTarget = (step) => {
+      if (step.targetType==='none') return '';
+      if (step.targetType==='pace') {
+        const lo=step.targetLow, hi=step.targetHigh;
+        if (lo && hi) return ` · ${lo}–${hi}/km`;
+        if (lo) return ` · >${lo}/km`;
+        return '';
+      }
+      if (step.targetType==='pace100') {
+        const lo=step.targetLow, hi=step.targetHigh;
+        if (lo && hi) return ` · ${lo}–${hi}/100m`;
+        if (lo) return ` · >${lo}/100m`;
+        return '';
+      }
+      if (step.targetType==='hr') {
+        const lo=step.targetLow, hi=step.targetHigh;
+        if (lo && hi) return ` · ${lo}–${hi} bpm`;
+        if (lo) return ` · >${lo} bpm`;
+        return '';
+      }
+      return '';
+    };
 
-            const loadMonthEvents = async () => {
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth() + 1;
-                const url = `${calendarEventsUrl}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${viewingUserId ? `&user=${encodeURIComponent(viewingUserId)}` : ''}`;
-                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-                if (!res.ok) throw new Error(`calendar_events ${res.status}`);
-                const data = await res.json();
-                monthTrainings = Array.isArray(data.trainings) ? data.trainings : [];
-                monthCompetitions = Array.isArray(data.competitions) ? data.competitions : [];
-                monthActivities = Array.isArray(data.activities) ? data.activities : [];
-                indexMonthEvents();
-            };
+    /* ── swim extras helper ─────────────────────────────────────── */
+    const fmtSwimExtras = (step) => {
+      const parts = [];
+      if (step.stroke) parts.push(step.stroke);
+      if (step.eduName) parts.push(step.eduName);
+      if (step.equipment) parts.push(step.equipment);
+      return parts.length ? ` [${parts.join(', ')}]` : '';
+    };
 
-            const formatDistance = (type, data) => {
-                let d;
-                if (type === 'training') d = data.distance_km;
-                else d = data.distance;
-                if (d === undefined || d === null || d === '') return 'N/A';
-                const n = Number(d);
-                if (!Number.isFinite(n)) return 'N/A';
-                const km = (type === 'activity' && n > 100) ? (n / 1000) : n;
-                return `${km.toFixed(2)} km`;
-            };
+    /* ── step → Garmin content text (for backend parser) ─────────── */
+    const stepToText = (step, indent='') => {
+      if (step.type==='repeat') {
+        const lines=[`${indent}${step.iterations}x`];
+        for(const c of step.children) lines.push(stepToText(c, indent+'  '));
+        return lines.join('\n');
+      }
+      const dur = fmtDurationDisplay(step);
+      const meta = STEP_META[step.type];
+      return `${indent}- ${dur} ${meta.label}${fmtTarget(step)}${fmtSwimExtras(step)}`;
+    };
+    const stepsToContent = () => {
+      let content = steps.map(s=>stepToText(s)).join('\n');
+      // Ajouter le matériel global de la séance si natation
+      if (currentSport()==='swimming' && swimEquipment.size>0) {
+        content = `Matériel: ${[...swimEquipment].join(', ')}\n` + content;
+      }
+      return content;
+    };
 
-            const sportLabel = (sport) => {
-                const fr = {
-                    running: 'Course à pied',
-                    cycling: 'Vélo',
-                    swimming: 'Natation',
-                    strength_training: 'Musculation',
-                    other: 'Autre'
-                };
-                const en = {
-                    running: 'Running',
-                    cycling: 'Cycling',
-                    swimming: 'Swimming',
-                    strength_training: 'Strength',
-                    other: 'Other'
-                };
-                const table = (lang === 'en') ? en : fr;
-                return table[sport] || table.other;
-            };
+    /* ── render ─────────────────────────────────────────────────── */
+    const renderSteps = () => {
+      const container = document.getElementById('step-builder');
+      const empty = document.getElementById('step-empty');
+      container.querySelectorAll('.step-item').forEach(el=>el.remove());
 
-            const workoutPresets = {
-                recup: {
-                    title: 'Récup',
-                    sport: 'running',
-                    description: 'Footing très facile',
-                    content: "- 30' à 45' très facile\n- Relâché, cadence naturelle\n- Objectif: récupérer"
-                },
-                ef: {
-                    title: 'EF',
-                    sport: 'running',
-                    description: 'Endurance fondamentale',
-                    content: "- 45' à 1h15 en aisance respiratoire\n- Option: 6x20'' lignes droites (r=40'')"
-                },
-                tempo: {
-                    title: 'Tempo',
-                    sport: 'running',
-                    description: 'Allure soutenue mais contrôlée',
-                    content: "- 20' EF\n- 2x10' tempo (r=3')\n- 10' retour au calme"
-                },
-                frac_short: {
-                    title: 'Fractionné court',
-                    sport: 'running',
-                    description: 'Vitesse / VO2',
-                    content: "- 20' EF\n- 10x400m (r=1')\n- 10' retour au calme"
-                },
-                frac_long: {
-                    title: 'Fractionné long',
-                    sport: 'running',
-                    description: 'Seuil / allure spécifique',
-                    content: "- 20' EF\n- 5x1000m (r=2')\n- 10' retour au calme"
-                }
-            };
+      if (!steps.length) { empty.style.display='block'; updateSummary(); return; }
+      empty.style.display='none';
 
-            const applyPreset = () => {
-                const key = document.getElementById('training-preset').value;
-                if (!key || !workoutPresets[key]) return;
-                const p = workoutPresets[key];
-                if (p.title) document.getElementById('training-title').value = p.title;
-                if (p.sport) document.getElementById('training-sport').value = p.sport;
-                if (p.description !== undefined) document.getElementById('training-description').value = p.description;
-                if (p.content !== undefined) document.getElementById('training-content').value = p.content;
-                document.getElementById('training-title').focus();
-            };
+      steps.forEach((step, idx) => {
+        const el = buildStepEl(step, idx, null);
+        container.appendChild(el);
+      });
+      updateSummary();
+    };
 
-            const renderCalendar = () => {
-                calendarBody.innerHTML = ""; // Réinitialise le contenu du calendrier
+    const buildStepEl = (step, idx, parentIdx) => {
+      const meta = STEP_META[step.type];
+      const el = document.createElement('div');
+      el.className = 'step-item';
+      el.style.cssText = `border-radius:10px; border:1px solid ${meta.border}; background:${meta.color}; padding:10px 12px; display:flex; flex-direction:column; gap:6px;`;
 
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth();
-                const firstDay = new Date(year, month, 1).getDay();
-                const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1; // Débute lundi
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const top = document.createElement('div');
+      top.style.cssText = 'display:flex; align-items:center; gap:10px; flex-wrap:wrap;';
 
-                monthYearDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+      const label = document.createElement('span');
+      label.style.cssText = 'font-weight:800; min-width:120px;';
+      label.textContent = meta.label;
+      top.appendChild(label);
 
-                let row = document.createElement("tr");
-
-                // Ajouter des cases vides avant le premier jour
-                for (let i = 0; i < adjustedFirstDay; i++) {
-                    const emptyCell = document.createElement("td");
-                    emptyCell.className = "empty-cell";
-                    row.appendChild(emptyCell);
-                }
-
-                // Ajouter les cellules pour chaque jour
-                for (let day = 1; day <= daysInMonth; day++) {
-                    if (row.children.length === 7) {
-                        calendarBody.appendChild(row);
-                        row = document.createElement("tr");
-                    }
-
-                    const dayCell = document.createElement("td");
-                    dayCell.className = "day-cell";
-                    const dayNumber = document.createElement('div');
-                    dayNumber.className = 'day-number';
-                    dayNumber.textContent = day;
-                    dayCell.appendChild(dayNumber);
-
-                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const events = eventsByDate.get(dateKey) || [];
-
-                    // Afficher les événements dans les cellules
-                    events.forEach(event => {
-                        const eventDiv = document.createElement("div");
-                        eventDiv.className =
-                            event.type === 'activity'
-                                ? "activity-event"
-                                : event.type === 'training'
-                                ? "training-event"
-                                : "competition-event";
-                        if (event.type === 'training') {
-                            const done = !!event.linked_activity_id || !!event.done;
-                            eventDiv.textContent = (event.title || 'Entraînement') + (done ? ' ✓' : '');
-                        } else {
-                            eventDiv.textContent = event.name;
-                        }
-                        eventDiv.addEventListener("mouseenter", (e) => showTooltip(e, event));
-                        eventDiv.addEventListener("mouseleave", hideTooltip);
-                        if (event.type === 'training' && event.id) {
-                            eventDiv.classList.add('clickable');
-                            if (event.linked_activity_id) {
-                                eventDiv.title = "Ouvrir l'activité associée";
-                                eventDiv.addEventListener('click', () => {
-                                    const url = activityUrl(event.linked_activity_id);
-                                    if (url) window.location.href = url;
-                                });
-                            } else {
-                                eventDiv.title = 'Ouvrir la fiche entraînement';
-                                eventDiv.addEventListener('click', () => {
-                                    window.location.href = trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(event.id));
-                                });
-                            }
-                        }
-                        if (event.type === 'competition' && event.id) {
-                            eventDiv.classList.add('clickable');
-                            eventDiv.title = 'Ouvrir la fiche compétition';
-                            eventDiv.addEventListener('click', () => {
-                                window.location.href = competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(event.id));
-                            });
-                        }
-                        if (event.type === 'activity' && event.activity_id) {
-                            eventDiv.classList.add('clickable');
-                            eventDiv.title = "Ouvrir la fiche activité";
-                            eventDiv.addEventListener('click', () => {
-                                const url = activityUrl(event.activity_id);
-                                if (url) window.location.href = url;
-                            });
-                        }
-                        dayCell.appendChild(eventDiv);
-                    });
-
-                    row.appendChild(dayCell);
-                }
-
-                // Ajouter la dernière ligne si elle contient des éléments
-                if (row.children.length > 0) {
-                    calendarBody.appendChild(row);
-                }
-            };
-
-            const showTooltip = (event, data) => {
-                tooltip.style.display = "block";
-                tooltip.style.top = `${event.pageY + 10}px`;
-                tooltip.style.left = `${event.pageX + 10}px`;
-                const title = data.type === 'training' ? (data.title || 'Entraînement') : data.name;
-                const lines = [
-                    `${data.type === 'activity' ? 'Activité' : data.type === 'training' ? 'Entraînement' : 'Compétition'}: ${title}`,
-                    `Date: ${data.date}`,
-                    `Sport: ${sportLabel(data.sport || 'other')}`,
-                    `Distance: ${formatDistance(data.type, data)}`
-                ];
-                if (data.type === 'training') {
-                    const done = !!data.linked_activity_id || !!data.done;
-                    lines.push(`Réalisé: ${done ? 'oui' : 'non'}`);
-                    if (data.linked_activity_id) {
-                        const an = data.linked_activity_name || `#${data.linked_activity_id}`;
-                        lines.push(`Activité associée: ${an}`);
-                    }
-                }
-                if (data.type === 'activity') {
-                    lines.push(`Lieu: ${data.locationName || 'Lieu inconnu'}`);
-                }
-                if (data.description) {
-                    lines.push(`Description: ${data.description}`);
-                }
-                if (data.type === 'training' && data.content) {
-                    lines.push(`\nContenu:\n${data.content}`);
-                }
-                if (data.type === 'training' && data.feeling) {
-                    lines.push(`Ressenti: ${data.feeling}`);
-                }
-                if (data.type === 'training' && data.post_notes) {
-                    lines.push(`Remarques après séance: ${data.post_notes}`);
-                }
-                if (data.type === 'training' && data.notes) {
-                    lines.push(`Remarques: ${data.notes}`);
-                }
-                tooltip.textContent = lines.join('\n');
-            };
-
-            const hideTooltip = () => {
-                tooltip.style.display = "none";
-            };
-
-            const addEvent = (type) => {
-                const date = document.getElementById(`${type}-date`).value;
-                const distance = document.getElementById(`${type}-distance`).value;
-                const sport = document.getElementById(`${type}-sport`).value;
-
-                const name = type === 'training'
-                    ? document.getElementById('training-title').value
-                    : document.getElementById(`${type}-name`).value;
-
-                const description = type === 'training'
-                    ? document.getElementById('training-description').value
-                    : '';
-                const content = type === 'training'
-                    ? document.getElementById('training-content').value
-                    : '';
-                const notes = type === 'training'
-                    ? document.getElementById('training-notes').value
-                    : '';
-
-                if (!name || !date) {
-                    alert("Veuillez remplir tous les champs.");
-                    return;
-                }
-
-                const form = new FormData();
-                form.append('name', name);
-                if (type === 'training') form.append('title', name);
-                form.append('date', date);
-                form.append('sport', sport);
-                if (viewingUserId) form.append('user_id', viewingUserId);
-                if (distance) form.append('distance', distance);
-                if (type === 'training') {
-                    if (description) form.append('description', description);
-                    if (content) form.append('content', content);
-                    if (notes) form.append('notes', notes);
-                }
-                if (type === 'competition') form.append('location', '');
-
-                fetch(type === 'training' ? "{{ url_for('add_training') }}" : "{{ url_for('add_competition') }}", {
-                    method: 'POST',
-                    body: form
-                }).then(() => {
-                    const url = withUserParam(window.location.pathname);
-                    window.location.href = url;
-                });
-            };
-
-            window.deleteCompetition = (name) => {
-                window.location.href = withUserParam(`{{ url_for('remove_competition', competition_id='__ID__') }}`.replace('__ID__', encodeURIComponent(name)));
-            };
-
-            window.deleteTraining = (name) => {
-                window.location.href = withUserParam(`{{ url_for('remove_training', training_id='__ID__') }}`.replace('__ID__', encodeURIComponent(name)));
-            };
-
-            const renderList = () => {
-                const competitionList = document.getElementById("competition-list");
-                const trainingList = document.getElementById("training-list");
-                const trainingMeta = document.getElementById('training-list-meta');
-                const competitionMeta = document.getElementById('competition-list-meta');
-
-                const parseDate = (s) => {
-                    const v = String(s || '');
-                    if (!v) return null;
-                    const d = new Date(`${v}T00:00:00`);
-                    return Number.isFinite(d.getTime()) ? d : null;
-                };
-
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const sortAsc = (a, b) => String(a.date || '').localeCompare(String(b.date || ''));
-                const sortDesc = (a, b) => String(b.date || '').localeCompare(String(a.date || ''));
-
-                const upcomingTrainings = trainings
-                    .filter(t => parseDate(t.date) && parseDate(t.date) >= today)
-                    .sort(sortAsc);
-                const upcomingCompetitions = competitions
-                    .filter(c => parseDate(c.date) && parseDate(c.date) >= today)
-                    .sort(sortAsc);
-
-                const shownTrainings = upcomingTrainings.slice(0, 10);
-                const shownCompetitions = upcomingCompetitions.slice(0, 10);
-
-                competitionList.innerHTML = (shownCompetitions.length ? shownCompetitions : [null]).map(competition => competition ? `
-                    <li>
-                        <div>
-                            <strong><a href="${withUserParam(competitionDetailBaseUrl.replace('__ID__', encodeURIComponent(competition.id)))}">${competition.name}</a></strong>
-                            <p>Date: ${competition.date} | Sport: ${sportLabel(competition.sport)} | Distance: ${competition.distance || 'N/A'} km</p>
-                        </div>
-                        <button class="delete-button" onclick="deleteCompetition('${(competition.id || competition.name).toString().replace(/'/g, "\\'")}')">${lang === 'en' ? 'Delete' : 'Supprimer'}</button>
-                    </li>
-                ` : `<li class="muted">Aucune compétition à venir</li>`).join("");
-
-                trainingList.innerHTML = (shownTrainings.length ? shownTrainings : [null]).map(training => training ? `
-                    <li>
-                        <div>
-                            <strong><a href="${withUserParam(trainingDetailBaseUrl.replace('__ID__', encodeURIComponent(training.id)))}">${training.title}</a></strong>
-                            <p>Date: ${training.date} | Sport: ${sportLabel(training.sport)} | Distance: ${(training.distance_km ?? 'N/A')} km</p>
-                        </div>
-                        <button class="delete-button" onclick="deleteTraining('${(training.id || training.title).toString().replace(/'/g, "\\'")}')">${lang === 'en' ? 'Delete' : 'Supprimer'}</button>
-                    </li>
-                ` : `<li class="muted">Aucun entraînement planifié</li>`).join("");
-
-                if (trainingMeta) {
-                    trainingMeta.textContent = upcomingTrainings.length > 10
-                        ? `Affiché ${shownTrainings.length} / ${upcomingTrainings.length} (le reste est dans le calendrier)`
-                        : '';
-                }
-                if (competitionMeta) {
-                    competitionMeta.textContent = upcomingCompetitions.length > 10
-                        ? `Affiché ${shownCompetitions.length} / ${upcomingCompetitions.length} (le reste est dans le calendrier)`
-                        : '';
-                }
-            };
-
-            document.getElementById("prev-month").addEventListener("click", () => {
-                currentDate.setMonth(currentDate.getMonth() - 1);
-                loadMonthEvents().then(renderCalendar).catch(() => renderCalendar());
-            });
-
-            document.getElementById("next-month").addEventListener("click", () => {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-                loadMonthEvents().then(renderCalendar).catch(() => renderCalendar());
-            });
-
-            loadMonthEvents().then(renderCalendar).catch(() => renderCalendar());
-            renderList();
-
-            // Prefill planner from an existing activity if requested.
-            try {
-                const params = new URLSearchParams(window.location.search || '');
-                const copyActivityId = params.get('copy_activity_id');
-                if (copyActivityId) {
-                    fetch(`${activityAsTrainingUrl}?activity_id=${encodeURIComponent(copyActivityId)}${viewingUserId ? `&user=${encodeURIComponent(viewingUserId)}` : ''}`, { headers: { 'Accept': 'application/json' } })
-                        .then((r) => r.ok ? r.json() : null)
-                        .then((data) => {
-                            if (!data) return;
-                            const d = new Date();
-                            d.setDate(d.getDate() + 7);
-                            const yyyy = d.getFullYear();
-                            const mm = String(d.getMonth() + 1).padStart(2, '0');
-                            const dd = String(d.getDate()).padStart(2, '0');
-
-                            if (data.title) document.getElementById('training-title').value = data.title;
-                            if (data.sport) document.getElementById('training-sport').value = data.sport;
-                            if (data.distance_km !== null && data.distance_km !== undefined) {
-                                document.getElementById('training-distance').value = String(data.distance_km);
-                            }
-                            document.getElementById('training-date').value = `${yyyy}-${mm}-${dd}`;
-                            setActiveTab('planner');
-                            document.getElementById('training-title').focus();
-                        })
-                        .catch(() => { /* ignore */ });
-                }
-            } catch (e) {
-                // ignore
-            }
-
-            // default view
-            setActiveTab('calendar');
-
-            document.getElementById('add-competition').addEventListener('click', () => addEvent('competition'));
-            document.getElementById('add-training').addEventListener('click', () => addEvent('training'));
-                        document.getElementById('apply-preset').addEventListener('click', applyPreset);
-                        document.getElementById('training-preset').addEventListener('change', applyPreset);
+      if (step.type !== 'repeat') {
+        top.appendChild(buildDurationControl(step, idx, parentIdx));
+        top.appendChild(buildTargetControl(step, idx, parentIdx));
+        if (currentSport()==='swimming') {
+          top.appendChild(buildSwimExtrasControl(step));
+        }
+      } else {
+        // iterations
+        const itLabel = document.createElement('span');
+        itLabel.className = 'muted';
+        itLabel.style.fontSize = '0.88rem';
+        itLabel.textContent = 'Répétitions:';
+        const itInput = document.createElement('input');
+        itInput.type='number'; itInput.min='1'; itInput.max='99'; itInput.value=step.iterations;
+        itInput.style.cssText='width:55px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.9rem;';
+        itInput.addEventListener('input', ()=>{
+          step.iterations = Math.max(1,parseInt(itInput.value)||1);
+          updateSummary();
         });
+        top.appendChild(itLabel);
+        top.appendChild(itInput);
+      }
+
+      // move up/down/delete
+      const actions = document.createElement('div');
+      actions.style.cssText='display:flex; gap:4px; margin-left:auto;';
+
+      if (parentIdx===null) {
+        if (idx>0) {
+          const up = btn('↑','move-btn',()=>{ const t=steps[idx-1]; steps[idx-1]=steps[idx]; steps[idx]=t; renderSteps(); });
+          actions.appendChild(up);
+        }
+        if (idx<steps.length-1) {
+          const dn = btn('↓','move-btn',()=>{ const t=steps[idx+1]; steps[idx+1]=steps[idx]; steps[idx]=t; renderSteps(); });
+          actions.appendChild(dn);
+        }
+        const del = btn('✕','del-btn',()=>{ steps.splice(idx,1); renderSteps(); });
+        del.style.color='var(--accent2)';
+        actions.appendChild(del);
+      } else {
+        const del = btn('✕','del-btn',()=>{ steps[parentIdx].children.splice(idx,1); renderSteps(); });
+        del.style.color='var(--accent2)';
+        actions.appendChild(del);
+      }
+      top.appendChild(actions);
+      el.appendChild(top);
+
+      // repeat children
+      if (step.type==='repeat') {
+        const children = document.createElement('div');
+        children.style.cssText='display:flex; flex-direction:column; gap:6px; padding-left:20px; border-left:2px solid rgba(255,77,141,0.3); margin-top:4px;';
+        step.children.forEach((child,cidx)=>{
+          children.appendChild(buildStepEl(child,cidx,idx));
+        });
+        // add child buttons
+        const addBtns = document.createElement('div');
+        addBtns.style.cssText='display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;';
+        const childTypes = currentSport()==='swimming'
+          ? [['Intervalle','interval'],['Récupération','recovery'],['Éducatif','edu']]
+          : [['Intervalle','interval'],['Récupération','recovery']];
+        childTypes.forEach(([lbl,t])=>{
+          const b = btn('+ '+lbl,'btn btn--sm',()=>{
+            step.children.push(t==='edu' ? makeEdu('') : makeStep(t));
+            renderSteps();
+          });
+          b.style.fontSize='0.8rem';
+          addBtns.appendChild(b);
+        });
+        children.appendChild(addBtns);
+        el.appendChild(children);
+      }
+
+      return el;
+    };
+
+    const buildDurationControl = (step, idx, parentIdx) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText='display:flex; align-items:center; gap:6px;';
+
+      const typeSelect = document.createElement('select');
+      typeSelect.style.cssText='padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.85rem;';
+      [['time','Durée'],['distance','Distance']].forEach(([v,l])=>{
+        const o=document.createElement('option'); o.value=v; o.textContent=l;
+        if(step.durationType===v) o.selected=true;
+        typeSelect.appendChild(o);
+      });
+
+      const valInput = document.createElement('input');
+      valInput.style.cssText='width:70px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.9rem;';
+
+      const unitLabel = document.createElement('span');
+      unitLabel.className='muted';
+      unitLabel.style.fontSize='0.8rem';
+
+      const refreshInputs = () => {
+        if(step.durationType==='time') {
+          valInput.type='text'; valInput.placeholder='ex: 20min';
+          valInput.value = fmtDuration(step.durationValue);
+          unitLabel.textContent='';
+        } else {
+          valInput.type='number'; valInput.placeholder='ex: 400';
+          valInput.value = step.durationValue;
+          unitLabel.textContent='m';
+        }
+      };
+      refreshInputs();
+
+      typeSelect.addEventListener('change',()=>{
+        step.durationType = typeSelect.value;
+        step.durationValue = step.durationType==='time'?300:400;
+        refreshInputs(); updateSummary();
+      });
+
+      valInput.addEventListener('change',()=>{
+        if(step.durationType==='time') step.durationValue = parseTimeInput(valInput.value);
+        else step.durationValue = parseFloat(valInput.value)||0;
+        updateSummary();
+      });
+
+      wrap.appendChild(typeSelect);
+      wrap.appendChild(valInput);
+      wrap.appendChild(unitLabel);
+      return wrap;
+    };
+
+    const buildTargetControl = (step, idx, parentIdx) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText='display:flex; align-items:center; gap:6px;';
+
+      const typeSelect = document.createElement('select');
+      typeSelect.style.cssText='padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.85rem;';
+      const isSwim = currentSport()==='swimming';
+      const targetOpts = isSwim
+        ? [['none','Aucune cible'],['pace100','Allure /100m'],['hr','FC']]
+        : [['none','Aucune cible'],['pace','Allure /km'],['hr','FC']];
+      targetOpts.forEach(([v,l])=>{
+        const o=document.createElement('option'); o.value=v; o.textContent=l;
+        if(step.targetType===v) o.selected=true;
+        typeSelect.appendChild(o);
+      });
+
+      const detailsDiv = document.createElement('div');
+      detailsDiv.style.cssText='display:flex; align-items:center; gap:4px;';
+
+      const refreshDetails = () => {
+        detailsDiv.innerHTML='';
+        if(step.targetType==='none') return;
+        const unit = step.targetType==='pace' ? '/km' : step.targetType==='pace100' ? '/100m' : 'bpm';
+        const lo=makeTargetInput(step.targetLow||'', v=>{ step.targetLow=v||null; });
+        const hi=makeTargetInput(step.targetHigh||'', v=>{ step.targetHigh=v||null; });
+        const sep=document.createElement('span'); sep.className='muted'; sep.textContent='–';
+        detailsDiv.appendChild(lo); detailsDiv.appendChild(sep); detailsDiv.appendChild(hi);
+        const ul=document.createElement('span'); ul.className='muted'; ul.style.fontSize='0.8rem'; ul.textContent=unit;
+        detailsDiv.appendChild(ul);
+      };
+      refreshDetails();
+
+      typeSelect.addEventListener('change',()=>{
+        step.targetType=typeSelect.value;
+        step.targetLow=null; step.targetHigh=null;
+        refreshDetails();
+      });
+
+      wrap.appendChild(typeSelect);
+      wrap.appendChild(detailsDiv);
+      return wrap;
+    };
+
+    /* ── swim extras control (nage + éducatif + matériel individuel) ── */
+    const buildSwimExtrasControl = (step) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText='display:flex; align-items:center; gap:6px; flex-wrap:wrap;';
+
+      // Nage
+      const strokeSel = document.createElement('select');
+      strokeSel.style.cssText='padding:4px 6px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.8rem;';
+      SWIM_STROKES.forEach(([v,l])=>{
+        const o=document.createElement('option'); o.value=v; o.textContent=l;
+        if((step.stroke||'')===(v)) o.selected=true;
+        strokeSel.appendChild(o);
+      });
+      strokeSel.addEventListener('change',()=>{ step.stroke=strokeSel.value||null; updateSummary(); });
+      wrap.appendChild(strokeSel);
+
+      // Éducatif (seulement si type edu)
+      if (step.type==='edu') {
+        const eduSel = document.createElement('select');
+        eduSel.style.cssText='padding:4px 6px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.8rem;';
+        SWIM_EDU_PRESETS.forEach(name=>{
+          const o=document.createElement('option'); o.value=name;
+          o.textContent=name||'— choisir éducatif —';
+          if((step.eduName||'')===name) o.selected=true;
+          eduSel.appendChild(o);
+        });
+        // Input libre en plus
+        const eduInp = document.createElement('input');
+        eduInp.type='text'; eduInp.placeholder='ou saisir…';
+        eduInp.value=SWIM_EDU_PRESETS.includes(step.eduName||'') ? '' : (step.eduName||'');
+        eduInp.style.cssText='width:110px; padding:4px 6px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.8rem;';
+        eduSel.addEventListener('change',()=>{ if(eduSel.value){ step.eduName=eduSel.value; eduInp.value=''; } updateSummary(); });
+        eduInp.addEventListener('change',()=>{ if(eduInp.value.trim()){ step.eduName=eduInp.value.trim(); eduSel.value=''; } updateSummary(); });
+        wrap.appendChild(eduSel);
+        wrap.appendChild(eduInp);
+      }
+
+      // Matériel individuel (bouton toggle)
+      const equipBtns = ['planche','pull-buoy','palmes','plaquettes','élastique','tuba'];
+      equipBtns.forEach(eq=>{
+        const b=document.createElement('button');
+        b.type='button'; b.textContent=eq;
+        const isActive = (step.equipment||'').includes(eq);
+        b.style.cssText=`padding:2px 7px; border-radius:6px; cursor:pointer; font-size:0.75rem; border:1px solid rgba(56,189,248,0.3); background:${isActive?'rgba(56,189,248,0.35)':'rgba(56,189,248,0.07)'}; color:var(--text);`;
+        b.addEventListener('click',()=>{
+          const cur = step.equipment ? step.equipment.split(',').map(s=>s.trim()).filter(Boolean) : [];
+          const i=cur.indexOf(eq);
+          if(i>=0) cur.splice(i,1); else cur.push(eq);
+          step.equipment=cur.join(', ')||null;
+          b.style.background=cur.includes(eq)?'rgba(56,189,248,0.35)':'rgba(56,189,248,0.07)';
+          updateSummary();
+        });
+        wrap.appendChild(b);
+      });
+
+      return wrap;
+    };
+
+    const makeTargetInput = (val, onChange) => {
+      const inp = document.createElement('input');
+      inp.type='text'; inp.value=val; inp.placeholder='—';
+      inp.style.cssText='width:55px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:rgba(8,12,22,0.6); color:var(--text); font-size:0.85rem;';
+      inp.addEventListener('change',()=>onChange(inp.value.trim()));
+      return inp;
+    };
+
+    const btn = (label, cls, onClick) => {
+      const b=document.createElement('button');
+      b.type='button'; b.textContent=label; b.className=cls;
+      if(cls==='move-btn') b.style.cssText='background:rgba(255,255,255,0.08); border:1px solid var(--border); color:var(--text); padding:2px 7px; border-radius:6px; cursor:pointer; font-size:0.85rem;';
+      if(cls==='del-btn')  b.style.cssText='background:none; border:1px solid rgba(255,77,141,0.3); color:var(--accent2); padding:2px 7px; border-radius:6px; cursor:pointer; font-size:0.85rem;';
+      b.addEventListener('click', onClick);
+      return b;
+    };
+
+    const parseTimeInput = (s) => {
+      s = String(s||'').trim().toLowerCase();
+      // "1h30", "1h30min", "20min", "20m", "20", "1:30:00", "20:00"
+      let m;
+      if ((m=s.match(/^(\d+)h(\d+)/))) return parseInt(m[1])*3600+parseInt(m[2])*60;
+      if ((m=s.match(/^(\d+)h/))) return parseInt(m[1])*3600;
+      if ((m=s.match(/^(\d+)\s*(?:min|m\b)/))) return parseInt(m[1])*60;
+      if ((m=s.match(/^(\d+):(\d+):(\d+)/))) return parseInt(m[1])*3600+parseInt(m[2])*60+parseInt(m[3]);
+      if ((m=s.match(/^(\d+):(\d+)/))) return parseInt(m[1])*60+parseInt(m[2]);
+      if ((m=s.match(/^(\d+)$/))) return parseInt(m[1])*60;
+      return 0;
+    };
+
+    const updateSummary = () => {
+      const el = document.getElementById('step-summary');
+      if(!steps.length) { el.textContent=''; return; }
+      const secs = totalSecs();
+      const stepsDesc = steps.map(s=>{
+        if(s.type==='repeat') return `${s.iterations}×(${s.children.map(c=>STEP_META[c.type]?.label).join('+')+''})`;
+        return `${STEP_META[s.type]?.label} ${fmtDurationDisplay(s)}`;
+      }).join(' · ');
+      el.textContent = (secs!=null ? `Durée estimée: ${fmtDuration(secs)} — ` : '') + stepsDesc;
+    };
+
+    /* ── presets ─────────────────────────────────────────────────── */
+    const PRESETS = {
+      // ── Course à pied ────────────────────────────────────────────
+      recup:      [makeStep('warmup',{durationValue:1800}), makeStep('cooldown',{durationValue:300})],
+      ef:         [makeStep('warmup',{durationValue:600}), makeStep('interval',{durationValue:3000}), makeStep('cooldown',{durationValue:600})],
+      tempo:      [makeStep('warmup',{durationValue:1200}), makeRepeat(2,[makeStep('interval',{durationValue:600}),makeStep('recovery',{durationValue:180})]), makeStep('cooldown',{durationValue:600})],
+      frac_short: [makeStep('warmup',{durationValue:1200}), makeRepeat(10,[makeStep('interval',{durationType:'distance',durationValue:400}),makeStep('recovery',{durationValue:60})]), makeStep('cooldown',{durationValue:600})],
+      frac_long:  [makeStep('warmup',{durationValue:1200}), makeRepeat(5, [makeStep('interval',{durationType:'distance',durationValue:1000}),makeStep('recovery',{durationValue:120})]), makeStep('cooldown',{durationValue:600})],
+      frac_vo2:   [makeStep('warmup',{durationValue:1200}), makeRepeat(6, [makeStep('interval',{durationValue:180}),makeStep('recovery',{durationValue:180})]), makeStep('cooldown',{durationValue:600})],
+
+      // ── Natation ─────────────────────────────────────────────────
+      // Récupération active : 400m échauff + 6×50m doux + 200m RAC
+      swim_recup: [
+        makeStep('warmup',{durationType:'distance',durationValue:400,stroke:'crawl'}),
+        makeRepeat(6,[
+          makeStep('interval',{durationType:'distance',durationValue:50,stroke:'crawl',targetType:'pace100',targetLow:'2:00',targetHigh:'2:30'}),
+          makeStep('recovery',{durationValue:30}),
+        ]),
+        makeStep('cooldown',{durationType:'distance',durationValue:200,stroke:'dos'}),
+      ],
+
+      // Endurance fondamentale : 500m + 3×300m + 200m RAC
+      swim_fond: [
+        makeStep('warmup',{durationType:'distance',durationValue:400,stroke:'crawl'}),
+        makeRepeat(3,[
+          makeStep('interval',{durationType:'distance',durationValue:300,stroke:'crawl',targetType:'pace100',targetLow:'1:45',targetHigh:'2:10'}),
+          makeStep('recovery',{durationValue:45}),
+        ]),
+        makeStep('cooldown',{durationType:'distance',durationValue:200,stroke:'dos'}),
+      ],
+
+      // Technique / Éducatifs : 300m + série d'éducatifs + 200m intégration
+      swim_technique: [
+        makeStep('warmup',{durationType:'distance',durationValue:300,stroke:'crawl'}),
+        makeEdu('catch-up',{durationValue:50,stroke:'crawl'}),
+        makeEdu('fingertip drag',{durationValue:50,stroke:'crawl'}),
+        makeEdu('one-arm',{durationValue:50,stroke:'crawl'}),
+        makeEdu('sculling',{durationValue:50,stroke:'crawl'}),
+        makeEdu('3-3-3',{durationValue:50,stroke:'crawl'}),
+        makeRepeat(4,[
+          makeStep('interval',{durationType:'distance',durationValue:100,stroke:'crawl',targetType:'pace100',targetLow:'1:40',targetHigh:'1:55'}),
+          makeStep('recovery',{durationValue:30}),
+        ]),
+        makeStep('cooldown',{durationType:'distance',durationValue:200,stroke:'dos'}),
+      ],
+
+      // Seuil anaérobie : 400m + 5×200m seuil + 300m RAC
+      swim_seuil: [
+        makeStep('warmup',{durationType:'distance',durationValue:400,stroke:'crawl'}),
+        makeEdu('catch-up',{durationValue:50,stroke:'crawl'}),
+        makeRepeat(5,[
+          makeStep('interval',{durationType:'distance',durationValue:200,stroke:'crawl',targetType:'pace100',targetLow:'1:30',targetHigh:'1:45'}),
+          makeStep('recovery',{durationValue:60}),
+        ]),
+        makeStep('cooldown',{durationType:'distance',durationValue:300,stroke:'dos'}),
+      ],
+
+      // Sprints : 400m + 8×50m sprint + 300m RAC
+      swim_sprint: [
+        makeStep('warmup',{durationType:'distance',durationValue:400,stroke:'crawl'}),
+        makeEdu('kick board',{durationValue:100,equipment:'planche'}),
+        makeRepeat(8,[
+          makeStep('interval',{durationType:'distance',durationValue:50,stroke:'crawl',targetType:'pace100',targetLow:'0:45',targetHigh:'1:00'}),
+          makeStep('recovery',{durationValue:90}),
+        ]),
+        makeStep('cooldown',{durationType:'distance',durationValue:300,stroke:'dos'}),
+      ],
+
+      // VO2max : 400m + 6×100m max + 300m RAC
+      swim_vo2: [
+        makeStep('warmup',{durationType:'distance',durationValue:400,stroke:'crawl'}),
+        makeEdu('one-arm',{durationValue:50,stroke:'crawl'}),
+        makeRepeat(6,[
+          makeStep('interval',{durationType:'distance',durationValue:100,stroke:'crawl',targetType:'pace100',targetLow:'1:15',targetHigh:'1:30'}),
+          makeStep('recovery',{durationValue:120}),
+        ]),
+        makeStep('cooldown',{durationType:'distance',durationValue:200,stroke:'dos'}),
+      ],
+
+      // 4 nages : 200m échauff + série 4 nages + 200m RAC
+      swim_4n: [
+        makeStep('warmup',{durationType:'distance',durationValue:200,stroke:'crawl'}),
+        makeRepeat(4,[
+          makeStep('interval',{durationType:'distance',durationValue:50,stroke:'papillon'}),
+          makeStep('interval',{durationType:'distance',durationValue:50,stroke:'dos'}),
+          makeStep('interval',{durationType:'distance',durationValue:50,stroke:'brasse'}),
+          makeStep('interval',{durationType:'distance',durationValue:50,stroke:'crawl'}),
+          makeStep('recovery',{durationValue:60}),
+        ]),
+        makeStep('cooldown',{durationType:'distance',durationValue:200,stroke:'dos'}),
+      ],
+    };
+
+    const PRESET_TITLES = {
+      recup:'Récup', ef:'EF — Endurance fondamentale', tempo:'Tempo',
+      frac_short:'Fractionné court 10×400m', frac_long:'Fractionné long 5×1000m', frac_vo2:'VO2max 6×3min',
+      swim_recup:'Natation — Récupération active',
+      swim_fond:'Natation — Endurance fondamentale',
+      swim_technique:'Natation — Technique & Éducatifs',
+      swim_seuil:'Natation — Seuil anaérobie',
+      swim_sprint:'Natation — Sprints 8×50m',
+      swim_vo2:'Natation — VO2max 6×100m',
+      swim_4n:'Natation — 4 nages',
+    };
+
+    const PRESET_SPORTS = {
+      recup:'running', ef:'running', tempo:'running',
+      frac_short:'running', frac_long:'running', frac_vo2:'running',
+      swim_recup:'swimming', swim_fond:'swimming', swim_technique:'swimming',
+      swim_seuil:'swimming', swim_sprint:'swimming', swim_vo2:'swimming', swim_4n:'swimming',
+    };
+
+    window.applyStepPreset = (key) => {
+      if(!PRESETS[key]) return;
+      steps = JSON.parse(JSON.stringify(PRESETS[key]));
+      const titleEl = document.getElementById('training-title');
+      if(!titleEl.value) titleEl.value = PRESET_TITLES[key] || '';
+      const sportEl = document.getElementById('training-sport');
+      const targetSport = PRESET_SPORTS[key] || 'running';
+      sportEl.value = targetSport;
+      onSportChange(targetSport);
+      renderSteps();
+    };
+    window.clearSteps = () => { steps=[]; swimEquipment.clear(); renderSteps(); updateEquipmentDisplay(); };
+
+    /* ── sport change handler ────────────────────────────────────── */
+    const onSportChange = (sport) => {
+      const isSwim = sport === 'swimming';
+      // Presets
+      document.getElementById('presets-running').style.display  = isSwim ? 'none' : 'flex';
+      document.getElementById('presets-swimming').style.display = isSwim ? 'flex' : 'none';
+      // Bouton éducatif
+      document.getElementById('step-add-edu').style.display = isSwim ? 'inline-flex' : 'none';
+      // Matériel
+      document.getElementById('swim-equipment-row').style.display = isSwim ? 'flex' : 'none';
+      // Re-rendre les steps pour afficher/masquer les contrôles natation
+      renderSteps();
+    };
+    document.getElementById('training-sport').addEventListener('change', (e) => onSportChange(e.target.value));
+
+    /* ── equipment tags ──────────────────────────────────────────── */
+    const updateEquipmentDisplay = () => {
+      const el = document.getElementById('swim-equipment-display');
+      if (el) el.textContent = swimEquipment.size>0 ? `Sélectionné : ${[...swimEquipment].join(', ')}` : '';
+    };
+    document.querySelectorAll('.equipment-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eq = btn.dataset.equip;
+        if (swimEquipment.has(eq)) {
+          swimEquipment.delete(eq);
+          btn.style.background='rgba(56,189,248,0.12)';
+          btn.style.fontWeight='';
+        } else {
+          swimEquipment.add(eq);
+          btn.style.background='rgba(56,189,248,0.4)';
+          btn.style.fontWeight='700';
+        }
+        updateEquipmentDisplay();
+      });
+    });
+
+    /* ── add step buttons ────────────────────────────────────────── */
+    document.getElementById('step-add-warmup').addEventListener('click',   ()=>{ steps.push(makeStep('warmup'));   renderSteps(); });
+    document.getElementById('step-add-interval').addEventListener('click', ()=>{ steps.push(makeStep('interval')); renderSteps(); });
+    document.getElementById('step-add-repeat').addEventListener('click',   ()=>{
+      const child = currentSport()==='swimming'
+        ? [makeStep('interval',{durationType:'distance',durationValue:100}), makeStep('recovery',{durationValue:30})]
+        : [makeStep('interval'), makeStep('recovery')];
+      steps.push(makeRepeat(3, child));
+      renderSteps();
+    });
+    document.getElementById('step-add-recovery').addEventListener('click', ()=>{ steps.push(makeStep('recovery')); renderSteps(); });
+    document.getElementById('step-add-cooldown').addEventListener('click', ()=>{ steps.push(makeStep('cooldown')); renderSteps(); });
+    document.getElementById('step-add-edu').addEventListener('click',      ()=>{ steps.push(makeEdu('')); renderSteps(); });
+
+    /* ═══════════════════════════════════════════════════════════════
+       SUBMIT
+    ══════════════════════════════════════════════════════════════════ */
+    document.getElementById('add-training').addEventListener('click', () => {
+      const title = (document.getElementById('training-title').value||'').trim();
+      const date  = (document.getElementById('training-date').value||'').trim();
+
+      if (!title) { document.getElementById('training-title').focus(); alert("Le titre est requis."); return; }
+      if (!date)  { document.getElementById('training-date').focus();  alert("La date est requise."); return; }
+
+      const sport       = document.getElementById('training-sport').value;
+      const distance    = (document.getElementById('training-distance').value||'').trim();
+      const description = (document.getElementById('training-description').value||'').trim();
+      const notes       = (document.getElementById('training-notes').value||'').trim();
+      const content     = stepsToContent();
+
+      // Garmin section
+      const garminDetails = document.getElementById('garmin-section');
+      const garminOpen    = garminDetails && garminDetails.open;
+      const garminPwd     = garminOpen ? (document.getElementById('training-garmin-password').value||'').trim() : '';
+      const scheduleGarmin = garminOpen && document.getElementById('training-schedule-garmin').checked;
+
+      // Password is optional if a cached session exists on the server —
+      // the backend will raise a clear error if neither session nor password is available.
+
+      const addBtn   = document.getElementById('add-training');
+      const statusEl = document.getElementById('garmin-send-status');
+      addBtn.disabled = true;
+      addBtn.textContent = garminPwd ? 'Envoi sur Garmin…' : 'Ajout en cours…';
+      if (statusEl) { statusEl.style.display='none'; statusEl.textContent=''; }
+
+      const form = new FormData();
+      form.append('title', title);
+      form.append('name',  title);
+      form.append('date',  date);
+      form.append('sport', sport);
+      if (viewingUserId) form.append('user_id', viewingUserId);
+      if (distance)    form.append('distance', distance);
+      if (description) form.append('description', description);
+      if (content)     form.append('content', content);
+      if (notes)       form.append('notes', notes);
+      if (garminPwd) {
+        form.append('send_to_garmin', '1');
+        form.append('garmin_password', garminPwd);
+        if (!scheduleGarmin) form.append('no_schedule', '1');
+      }
+
+      fetch(addTrainingUrl, { method:'POST', body:form })
+        .then(async (res) => {
+          if (res.ok) {
+            try {
+              const data = await res.json();
+              if (data && data.garmin_status && statusEl) {
+                statusEl.textContent = data.garmin_status;
+                statusEl.style.display = 'inline';
+                statusEl.style.color = data.garmin_ok ? 'var(--accent)' : 'var(--accent2)';
+                await new Promise(r => setTimeout(r, 2500));
+              }
+            } catch(_) { /* not JSON — normal redirect path */ }
+          }
+          window.location.href = withUser(window.location.pathname);
+        })
+        .catch(() => {
+          addBtn.disabled = false;
+          addBtn.textContent = 'Ajouter la séance';
+          if (statusEl) { statusEl.textContent='Erreur réseau.'; statusEl.style.display='inline'; }
+        });
+    });
+
+    /* ═══════════════════════════════════════════════════════════════
+       CALENDRIER
+    ══════════════════════════════════════════════════════════════════ */
+    let currentDate   = new Date();
+    let monthTrainings=[]; let monthCompetitions=[]; let monthActivities=[];
+    let eventsByDate  = new Map();
+    const calendarBody       = document.getElementById("calendar-body");
+    const monthYearDisplay   = document.getElementById("month-year");
+    const tooltip            = document.getElementById("tooltip");
+
+    const indexMonthEvents = () => {
+      eventsByDate = new Map();
+      const add = (ev) => {
+        if (!ev||!ev.date) return;
+        const k=String(ev.date);
+        if(!eventsByDate.has(k)) eventsByDate.set(k,[]);
+        eventsByDate.get(k).push(ev);
+      };
+      monthActivities.forEach(a=>add({type:'activity',...a}));
+      monthTrainings.forEach(t=>add({type:'training',...t}));
+      monthCompetitions.forEach(c=>add({type:'competition',...c}));
+    };
+
+    const loadMonthEvents = async () => {
+      const y=currentDate.getFullYear(), m=currentDate.getMonth()+1;
+      const url=`${calendarEventsUrl}?year=${y}&month=${m}${viewingUserId?'&user='+encodeURIComponent(viewingUserId):''}`;
+      const res=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(!res.ok) throw new Error('calendar_events '+res.status);
+      const data=await res.json();
+      monthTrainings   = Array.isArray(data.trainings)    ? data.trainings    : [];
+      monthCompetitions= Array.isArray(data.competitions) ? data.competitions : [];
+      monthActivities  = Array.isArray(data.activities)   ? data.activities   : [];
+      indexMonthEvents();
+    };
+
+    const renderCalendar = () => {
+      calendarBody.innerHTML='';
+      const y=currentDate.getFullYear(), mo=currentDate.getMonth();
+      const fd=new Date(y,mo,1).getDay(), adj=(fd===0)?6:fd-1;
+      const dim=new Date(y,mo+1,0).getDate();
+      monthYearDisplay.textContent=`${currentDate.toLocaleString('default',{month:'long'})} ${y}`;
+      let row=document.createElement('tr');
+      for(let i=0;i<adj;i++){const e=document.createElement('td');e.className='empty-cell';row.appendChild(e);}
+      for(let day=1;day<=dim;day++){
+        if(row.children.length===7){calendarBody.appendChild(row);row=document.createElement('tr');}
+        const cell=document.createElement('td'); cell.className='day-cell';
+        const dn=document.createElement('div'); dn.className='day-number'; dn.textContent=day; cell.appendChild(dn);
+        const dk=`${y}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const evs=eventsByDate.get(dk)||[];
+        evs.forEach(ev=>{
+          const ed=document.createElement('div');
+          ed.className=ev.type==='activity'?'activity-event':ev.type==='training'?'training-event':'competition-event';
+          ed.textContent=ev.type==='training'?(ev.title||'Entraînement')+(ev.linked_activity_id||ev.done?' ✓':''):ev.name;
+          if(ev.type==='training'&&ev.id){
+            ed.classList.add('clickable');
+            ed.addEventListener('click',()=>{
+              const u=ev.linked_activity_id?activityUrl(ev.linked_activity_id):trainingDetailBaseUrl.replace('__ID__',encodeURIComponent(ev.id));
+              if(u) window.location.href=u;
+            });
+          }
+          if(ev.type==='competition'&&ev.id){
+            ed.classList.add('clickable');
+            ed.addEventListener('click',()=>{window.location.href=competitionDetailBaseUrl.replace('__ID__',encodeURIComponent(ev.id));});
+          }
+          if(ev.type==='activity'&&ev.activity_id){
+            ed.classList.add('clickable');
+            ed.addEventListener('click',()=>{const u=activityUrl(ev.activity_id);if(u)window.location.href=u;});
+          }
+          ed.addEventListener('mouseenter',e=>showTooltip(e,ev));
+          ed.addEventListener('mouseleave',hideTooltip);
+          cell.appendChild(ed);
+        });
+        row.appendChild(cell);
+      }
+      if(row.children.length>0) calendarBody.appendChild(row);
+    };
+
+    const showTooltip=(e,data)=>{
+      tooltip.style.display='block';
+      tooltip.style.top=`${e.pageY+10}px`; tooltip.style.left=`${e.pageX+10}px`;
+      const title=data.type==='training'?(data.title||'Entraînement'):data.name;
+      const lines=[
+        `${data.type==='activity'?'Activité':data.type==='training'?'Entraînement':'Compétition'}: ${title}`,
+        `Date: ${data.date}`,`Sport: ${sportLabel(data.sport||'other')}`,`Distance: ${fmtDist(data.type,data)}`
+      ];
+      if(data.type==='training'){const done=!!(data.linked_activity_id||data.done);lines.push(`Réalisé: ${done?'oui':'non'}`);}
+      if(data.description) lines.push(`Description: ${data.description}`);
+      tooltip.textContent=lines.join('\n');
+    };
+    const hideTooltip=()=>{ tooltip.style.display='none'; };
+
+    /* ── prev/next month ─────────────────────────────────────────── */
+    document.getElementById('prev-month').addEventListener('click',()=>{ currentDate.setMonth(currentDate.getMonth()-1); loadMonthEvents().then(renderCalendar).catch(()=>renderCalendar()); });
+    document.getElementById('next-month').addEventListener('click',()=>{ currentDate.setMonth(currentDate.getMonth()+1); loadMonthEvents().then(renderCalendar).catch(()=>renderCalendar()); });
+
+    /* ═══════════════════════════════════════════════════════════════
+       LISTES À VENIR
+    ══════════════════════════════════════════════════════════════════ */
+    const renderList = () => {
+      const tl=document.getElementById('training-list');
+      const cl=document.getElementById('competition-list');
+      const tm=document.getElementById('training-list-meta');
+      const cm=document.getElementById('competition-list-meta');
+      const today=new Date(); today.setHours(0,0,0,0);
+      const pd=(s)=>{ const d=new Date(`${s}T00:00:00`); return isFinite(d.getTime())?d:null; };
+      const asc=(a,b)=>String(a.date||'').localeCompare(String(b.date||''));
+      const upT=trainings.filter(t=>pd(t.date)&&pd(t.date)>=today).sort(asc).slice(0,10);
+      const upC=competitions.filter(c=>pd(c.date)&&pd(c.date)>=today).sort(asc).slice(0,10);
+
+      const _postDel=(url)=>{ const f=document.createElement('form');f.method='POST';f.action=url;document.body.appendChild(f);f.submit(); };
+      window.deleteTraining=(id)=>{ if(!confirm('Supprimer cet entraînement ?')) return; _postDel(withUser(removeTrainingBaseUrl.replace('__ID__',encodeURIComponent(id)))); };
+      window.deleteCompetition=(id)=>{ if(!confirm('Supprimer cette compétition ?')) return; _postDel(withUser(removeCompetitionBaseUrl.replace('__ID__',encodeURIComponent(id)))); };
+
+      tl.innerHTML=(upT.length?upT:[null]).map(t=>t?`<li><div><strong><a href="${withUser(trainingDetailBaseUrl.replace('__ID__',encodeURIComponent(t.id)))}">${t.title}</a></strong><p>${t.date} · ${sportLabel(t.sport)}</p></div><button class="delete-button" onclick="deleteTraining('${(t.id||'').replace(/'/g,"\\'")}')">Supprimer</button></li>`:`<li class="muted">Aucun entraînement planifié</li>`).join('');
+      cl.innerHTML=(upC.length?upC:[null]).map(c=>c?`<li><div><strong><a href="${withUser(competitionDetailBaseUrl.replace('__ID__',encodeURIComponent(c.id)))}">${c.name}</a></strong><p>${c.date} · ${sportLabel(c.sport)}</p></div><button class="delete-button" onclick="deleteCompetition('${(c.id||'').replace(/'/g,"\\'")}')">Supprimer</button></li>`:`<li class="muted">Aucune compétition planifiée</li>`).join('');
+
+      if(tm) tm.textContent=trainings.filter(t=>pd(t.date)&&pd(t.date)>=today).length>10?`… et plus dans le calendrier`:'';
+      if(cm) cm.textContent=competitions.filter(c=>pd(c.date)&&pd(c.date)>=today).length>10?`… et plus dans le calendrier`:'';
+    };
+
+    /* ═══════════════════════════════════════════════════════════════
+       COMPÉTITION
+    ══════════════════════════════════════════════════════════════════ */
+    document.getElementById('add-competition').addEventListener('click', () => {
+      const name = (document.getElementById('competition-name').value||'').trim();
+      const date = (document.getElementById('competition-date').value||'').trim();
+      if (!name) { document.getElementById('competition-name').focus(); alert('Le nom est requis.'); return; }
+      if (!date) { document.getElementById('competition-date').focus(); alert('La date est requise.'); return; }
+      const sport    = document.getElementById('competition-sport').value;
+      const distance = (document.getElementById('competition-distance').value||'').trim();
+      const form = new FormData();
+      form.append('name',name); form.append('date',date); form.append('sport',sport); form.append('location','');
+      if(distance) form.append('distance',distance);
+      if(viewingUserId) form.append('user_id',viewingUserId);
+      fetch(addCompetitionUrl,{method:'POST',body:form}).then(()=>{ window.location.href=withUser(window.location.pathname); });
+    });
+
+    /* ═══════════════════════════════════════════════════════════════
+       TABS + INIT
+    ══════════════════════════════════════════════════════════════════ */
+    const tabCal=document.getElementById('tab-calendar');
+    const tabPln=document.getElementById('tab-planner');
+    const panCal=document.getElementById('panel-calendar');
+    const panPln=document.getElementById('panel-planner');
+    const setTab=(t)=>{
+      const isC=t==='calendar';
+      tabCal.classList.toggle('is-active',isC); tabPln.classList.toggle('is-active',!isC);
+      tabCal.setAttribute('aria-selected',isC?'true':'false'); tabPln.setAttribute('aria-selected',isC?'false':'true');
+      panCal.hidden=!isC; panPln.hidden=isC;
+    };
+    tabCal.addEventListener('click',()=>setTab('calendar'));
+    tabPln.addEventListener('click',()=>setTab('planner'));
+
+    // Prefill from activity
+    try {
+      const p=new URLSearchParams(window.location.search||'');
+      const cid=p.get('copy_activity_id');
+      if(cid){
+        fetch(`${activityAsTrainingUrl}?activity_id=${encodeURIComponent(cid)}${viewingUserId?'&user='+encodeURIComponent(viewingUserId):''}`,{headers:{'Accept':'application/json'}})
+          .then(r=>r.ok?r.json():null)
+          .then(data=>{
+            if(!data) return;
+            const d=new Date(); d.setDate(d.getDate()+7);
+            const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            if(data.title) document.getElementById('training-title').value=data.title;
+            if(data.sport) document.getElementById('training-sport').value=data.sport;
+            if(data.distance_km!=null) document.getElementById('training-distance').value=String(data.distance_km);
+            document.getElementById('training-date').value=ds;
+            setTab('planner');
+            document.getElementById('training-title').focus();
+          }).catch(()=>{});
+      }
+    } catch(_){}
+
+    setTab('calendar');
+    loadMonthEvents().then(renderCalendar).catch(()=>renderCalendar());
+    renderList();
+    renderSteps();
+  });
   </script>
 {% endblock %}

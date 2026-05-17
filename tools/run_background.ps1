@@ -4,15 +4,15 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 
 function Resolve-PythonExe {
     $candidates = @(
-        Join-Path $repoRoot ".venv\Scripts\python.exe",
-        Join-Path $repoRoot ".venv312\Scripts\python.exe"
+        (Join-Path $repoRoot ".venv312\Scripts\python.exe")
+        (Join-Path $repoRoot ".venv\Scripts\python.exe")
     )
     foreach ($c in $candidates) {
         if (Test-Path $c) { return $c }
     }
     $py = Get-Command py -ErrorAction SilentlyContinue
     if ($py) { return "py" }
-    throw "Python executable not found. Create a venv (.venv or .venv312) or install the 'py' launcher."
+    throw "Python executable not found. Create a venv (.venv312 or .venv) or install the 'py' launcher."
 }
 
 function Stop-ServerOnPort5000 {

@@ -20,6 +20,7 @@ instance/
 /output_graphs_health/
 /static/activity/
 /static/health/
+/static/health/**/
 /static/dashboard/
 /static/training/*.html
 /static/dashboard/
@@ -44,3 +45,6 @@ garmin_tracker.log
 # OS
 .DS_Store
 Thumbs.db
+
+# Credentials locales (NE JAMAIS versionner)
+app_settings.py

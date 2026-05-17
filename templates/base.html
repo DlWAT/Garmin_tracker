@@ -24,7 +24,7 @@
                 {% if is_logged_in %}
                     <a class="nav__link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard', user=viewing_user_id) }}">{{ t('Dashboard') }}</a>
                     <a class="nav__link {% if request.endpoint == 'community' %}active{% endif %}" href="{{ url_for('community') }}">{{ t('Communauté') }}</a>
-                    {% if is_coach %}
+                    {% if is_coach and has_coaching_route %}
                         <a class="nav__link {% if request.endpoint == 'coaching' %}active{% endif %}" href="{{ url_for('coaching', user=viewing_user_id) }}">{{ t('Coaching') }}</a>
                     {% endif %}
                     <a class="nav__link {% if request.endpoint == 'activity' %}active{% endif %}" href="{{ url_for('activity', user=viewing_user_id) }}">{{ t('Activités') }}</a>
